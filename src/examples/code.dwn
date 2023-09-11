@@ -1,0 +1,6 @@
+say("Hello, world")
+short_say("How")
+short_say("are")
+short_say("you?")
+
+"Ignored Comment"
