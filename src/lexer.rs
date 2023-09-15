@@ -25,65 +25,13 @@ pub fn tokenize(data: String) -> Vec<Token> {
     let mut string_token = String::new();
 
     for word in data.split(' ') {
-        for r_obj in paren_split(word, in_string) {
-            let obj = if r_obj.ends_with(')') {
-                r_obj.strip_suffix(')').unwrap()
-            } else {
-                r_obj
-            };
+        if word == ";" && !in_string && !word.starts_with('"') {
+            continue;
+        }
 
-            if obj.starts_with('"') {
-                in_string = true;
-
-                if obj.ends_with('"') {
-                    in_string = false;
-                    string_token = obj[1..obj.len() - 1].to_string();
-
-                    tokens.push(Token {
-                        ty: TokenTypes::STRING,
-                        modifiers: if in_func {
-                            vec![TokenModifiers::ARGS]
-                        } else {
-                            vec![]
-                        },
-                        val: string_token.to_string(),
-                    });
-                } else {
-                    string_token = obj[1..].to_string();
-                }
-
-                continue;
-            }
-
+        if word.starts_with('"') {
             if in_string {
                 string_token.push(' ');
-
-                if obj.ends_with('"') {
-                    in_string = false;
-                    string_token.push_str(&obj[..obj.len() - 1]);
-
-                    tokens.push(Token {
-                        ty: TokenTypes::STRING,
-                        modifiers: if in_func {
-                            vec![TokenModifiers::ARGS]
-                        } else {
-                            vec![]
-                        },
-                        val: string_token.to_string(),
-                    });
-
-                    continue;
-                } else {
-                    string_token.push_str(obj);
-                }
-            }
-
-            if obj.ends_with('"') {
-                if in_string {
-                    string_token.push(' ');
-                    string_token.push_str(&obj[..obj.len() - 1]);
-                }
-
                 tokens.push(Token {
                     ty: TokenTypes::STRING,
                     modifiers: if in_func {
@@ -91,35 +39,67 @@ pub fn tokenize(data: String) -> Vec<Token> {
                     } else {
                         vec![]
                     },
-                    val: string_token.to_string(),
+                    val: string_token.clone(),
                 });
 
                 in_string = false;
+                continue;
             }
 
-            if HASHMAP.lock().unwrap().contains_key(obj) {
-                in_func = true;
+            in_string = true;
 
+            string_token.push_str(if word == "\"" { " " } else { &word[1..] });
+
+            if word.ends_with('"') {
+                in_string = false;
+
+                string_token.pop();
                 tokens.push(Token {
-                    ty: TokenTypes::FUNC,
-                    modifiers: vec![],
-                    val: obj.to_string(),
-                })
+                    ty: TokenTypes::STRING,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: string_token.clone(),
+                });
             }
 
-            if r_obj.ends_with(')') {
-                in_func = false;
+            continue;
+        }
+
+        if in_string {
+            string_token.push(' ');
+            string_token.push_str(word);
+
+            if word.ends_with('"') {
+                in_string = false;
+
+                string_token.pop();
+                tokens.push(Token {
+                    ty: TokenTypes::STRING,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: string_token.clone(),
+                });
             }
+
+            continue;
+        }
+
+        if HASHMAP.lock().unwrap().contains_key(word) {
+            tokens.push(Token {
+                ty: TokenTypes::FUNC,
+                modifiers: vec![],
+                val: word.to_string(),
+            });
+
+            in_func = true;
         }
     }
 
     tokens
-}
-
-fn paren_split(data: &str, in_string: bool) -> std::str::Split<'_, char> {
-    if data.starts_with('"') || in_string {
-        data.split(' ')
-    } else {
-        data.split('(')
-    }
 }

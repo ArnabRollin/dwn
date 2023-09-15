@@ -31,6 +31,7 @@ fn main() {
     if arguments.options.contains(&"help".to_string()) || arguments.flags.contains(&"h".to_string())
     {
         about();
+        exit(0);
     }
 
     match arguments.command.as_str() {

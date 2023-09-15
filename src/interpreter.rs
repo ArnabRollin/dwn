@@ -21,8 +21,6 @@ pub fn interpret(file: Option<&String>) {
         let line = remove_all_after(line.unwrap(), ';');
         let tokens = tokenize(line);
 
-        println!("TOkens {tokens:#?}");
-
         if tokens.len() > 0 {
             match tokens[0].ty {
                 TokenTypes::FUNC => {
@@ -42,7 +40,7 @@ pub fn interpret(file: Option<&String>) {
 
                             match feedback {
                                 Some(err) => {
-                                    eprintln!("\nError on line {}: {}", count, err);
+                                    eprintln!("\nError on line {}: {}", count + 1, err);
                                     exit(1);
                                 }
                                 None => {}

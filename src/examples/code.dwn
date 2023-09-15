@@ -1,6 +1,2 @@
-say("Hello, world")
-short_say("How")
-short_say("are")
-short_say("you?")
-
-"Ignored Comment"
+say "Hello, World! " ; I am a comment!
+ask "Do you want to walk? " ; I sure do...
