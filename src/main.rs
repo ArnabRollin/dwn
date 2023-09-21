@@ -5,12 +5,14 @@ extern crate lazy_static;
 
 use about::{about, help};
 use argparser::argparse;
-use interpreter::interpret;
+use idle::idle;
+use interpreter::interpret_file;
 use std::{env::args, process::exit};
 
 mod about;
 mod argparser;
 mod dwn;
+mod idle;
 mod interpreter;
 mod lexer;
 
@@ -22,7 +24,10 @@ fn main() {
 
     let arguments = argparse(args);
 
-    if arguments.options.is_empty() && arguments.flags.is_empty() && arguments.arguments.is_empty()
+    if arguments.options.is_empty()
+        && arguments.flags.is_empty()
+        && arguments.arguments.is_empty()
+        && (arguments.command == String::new())
     {
         about();
         exit(1)
@@ -36,7 +41,8 @@ fn main() {
 
     match arguments.command.as_str() {
         "help" => help(arguments.arguments.get(0)),
-        "run" | "r" => interpret(arguments.arguments.get(0)),
+        "run" | "r" => interpret_file(arguments.arguments.get(0)),
+        "idle" => idle(),
         unknown_command => eprintln!("Unknown command: {}", unknown_command),
     }
 }
