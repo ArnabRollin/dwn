@@ -3,7 +3,10 @@ use std::{
     process::exit,
 };
 
-use crate::interpreter::interpret;
+use crate::{
+    dwn::{FUNCTIONS, VARIABLES},
+    runner::run,
+};
 
 pub fn idle() {
     let mut count = 1;
@@ -34,7 +37,12 @@ pub fn idle() {
             break;
         }
 
-        interpret(code.to_string(), count);
+        run(
+            code.to_string(),
+            count,
+            FUNCTIONS.lock().unwrap(),
+            VARIABLES.lock().unwrap(),
+        );
 
         count += 1;
     }

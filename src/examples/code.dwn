@@ -1,2 +1,2 @@
-say "Hello, World! " ; I am a comment!
-ask "Do you want to walk? " ; I sure do...
+let foo = (ask "Hello, World? ") ; I am a comment!
+say foo

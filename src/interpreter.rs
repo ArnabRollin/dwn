@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::exit;
 
-use crate::dwn::HASHMAP;
-use crate::lexer::{tokenize, Token, TokenTypes};
+use crate::dwn::{FUNCTIONS, VARIABLES};
+use crate::runner::run;
 
 pub fn interpret_file(file: Option<&String>) {
     let file_default = &String::new();
@@ -19,46 +19,12 @@ pub fn interpret_file(file: Option<&String>) {
 
     for (count, line) in reader.lines().enumerate() {
         let line = remove_all_after(line.unwrap(), ';');
-        interpret(line, count);
-    }
-}
-
-pub fn interpret(line: String, line_count: usize) {
-    let tokens = tokenize(line);
-
-    if tokens.len() > 0 {
-        match tokens[0].ty {
-            TokenTypes::FUNC => {
-                let functions = HASHMAP.lock().unwrap();
-
-                let f = functions.get(tokens[0].val.as_str());
-
-                match f {
-                    Some(f) => {
-                        let mut args: Vec<&Token> = vec![];
-
-                        for token in &tokens[1..] {
-                            args.push(token);
-                        }
-
-                        let feedback = f(args);
-
-                        match feedback {
-                            Some(err) => {
-                                eprintln!("\nError on line {}: {}", line_count + 1, err);
-                                exit(1);
-                            }
-                            None => {}
-                        }
-                    }
-                    None => {
-                        eprintln!("Error: Function {} does not exist!", tokens[0].val);
-                        exit(1);
-                    }
-                }
-            }
-            _ => {}
-        }
+        run(
+            line.trim().to_string(),
+            count,
+            FUNCTIONS.lock().unwrap(),
+            VARIABLES.lock().unwrap(),
+        );
     }
 }
 

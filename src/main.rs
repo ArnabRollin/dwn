@@ -5,6 +5,7 @@ extern crate lazy_static;
 
 use about::{about, help};
 use argparser::argparse;
+use framework::make_framework;
 use idle::idle;
 use interpreter::interpret_file;
 use std::{env::args, process::exit};
@@ -12,9 +13,11 @@ use std::{env::args, process::exit};
 mod about;
 mod argparser;
 mod dwn;
+mod framework;
 mod idle;
 mod interpreter;
 mod lexer;
+mod runner;
 
 fn main() {
     let mut args = args();
@@ -43,6 +46,7 @@ fn main() {
         "help" => help(arguments.arguments.get(0)),
         "run" | "r" => interpret_file(arguments.arguments.get(0)),
         "idle" => idle(),
+        "framework" | "fw" => make_framework(),
         unknown_command => eprintln!("Unknown command: {}", unknown_command),
     }
 }
