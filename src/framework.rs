@@ -6,7 +6,7 @@ pub fn make_framework() {
     let mut text = String::from("funcs:\n");
 
     for func in FUNCTIONS
-        .lock()
+        .read()
         .expect("Error: Could not access functions!")
         .keys()
     {

@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 #[derive(Clone, Copy, Debug)]
 pub enum TokenTypes {
@@ -22,11 +22,11 @@ pub struct Token {
 
 pub fn tokenize(
     data: String,
-    functions: MutexGuard<
+    functions: RwLockReadGuard<
         '_,
         std::collections::HashMap<&str, fn(Vec<&Token>) -> (Option<String>, Option<String>)>,
     >,
-    variables: MutexGuard<'_, std::collections::HashMap<String, String>>,
+    variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
 ) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
     let mut in_func = false;
@@ -75,7 +75,9 @@ pub fn tokenize(
                     ty: TokenTypes::LITERAL,
                     modifiers: vec![TokenModifiers::ARGS],
                     val: literal.clone(),
-                })
+                });
+
+                literal.clear();
             } else {
                 literal.push_str(word);
             }
@@ -94,10 +96,8 @@ pub fn tokenize(
             continue;
         }
 
-        println!("VARIABLES {variables:?}");
-
         if variables.contains_key(word) {
-            if !in_literal {
+            if !in_literal && !in_string {
                 tokens.push(Token {
                     ty: TokenTypes::VARIABLE,
                     modifiers: if in_func {
@@ -125,6 +125,8 @@ pub fn tokenize(
                     });
                 }
 
+                // string_token.clear();
+
                 in_string = false;
                 continue;
             }
@@ -148,6 +150,8 @@ pub fn tokenize(
                         val: string_token.clone(),
                     });
                 }
+
+                string_token.clear();
             }
 
             continue;

@@ -22,8 +22,8 @@ pub fn interpret_file(file: Option<&String>) {
         run(
             line.trim().to_string(),
             count,
-            FUNCTIONS.lock().unwrap(),
-            VARIABLES.lock().unwrap(),
+            FUNCTIONS.read().unwrap(),
+            VARIABLES.read().unwrap(),
         );
     }
 }

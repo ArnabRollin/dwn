@@ -1,20 +1,20 @@
 use crate::lexer::{tokenize, Token, TokenTypes};
 use std::process::exit;
-use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 pub fn run(
     line: String,
     line_count: usize,
-    functions: MutexGuard<
+    functions: RwLockReadGuard<
         '_,
         std::collections::HashMap<&str, fn(Vec<&Token>) -> (Option<String>, Option<String>)>,
     >,
-    variables: MutexGuard<'_, std::collections::HashMap<String, String>>,
+    variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
 ) -> Option<String> {
     let functions_ = functions.clone();
     let tokens = tokenize(line, functions, variables);
 
-    println!("TOKENS {tokens:?}");
+    // println!("TOKENS: {tokens:?}");
 
     if tokens.len() > 0 {
         match tokens[0].ty {
@@ -28,8 +28,8 @@ pub fn run(
                         for token in &tokens[1..] {
                             args.push(token);
                         }
-
                         let ret = f(args);
+
                         let feedback = ret.0;
 
                         match feedback {

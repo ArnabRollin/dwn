@@ -40,8 +40,8 @@ pub fn idle() {
         run(
             code.to_string(),
             count,
-            FUNCTIONS.lock().unwrap(),
-            VARIABLES.lock().unwrap(),
+            FUNCTIONS.read().unwrap(),
+            VARIABLES.read().unwrap(),
         );
 
         count += 1;
