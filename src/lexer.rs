@@ -1,6 +1,6 @@
 use std::sync::RwLockReadGuard;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenTypes {
     VARIABLE,
     FUNC,
@@ -13,7 +13,7 @@ pub enum TokenModifiers {
     ARGS,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub ty: TokenTypes,
     pub modifiers: Vec<TokenModifiers>,
@@ -201,4 +201,31 @@ pub fn tokenize(
     }
 
     tokens
+}
+
+#[test]
+fn tokenizer() {
+    use crate::dwn::{FUNCTIONS, VARIABLES};
+
+    let tokens = tokenize(
+        "say \"Hello World\"".to_string(),
+        FUNCTIONS.read().unwrap(),
+        VARIABLES.read().unwrap(),
+    );
+
+    assert_eq!(
+        tokens,
+        vec![
+            Token {
+                ty: TokenTypes::FUNC,
+                modifiers: vec![],
+                val: "say".to_string()
+            },
+            Token {
+                ty: TokenTypes::STRING,
+                modifiers: vec![TokenModifiers::ARGS],
+                val: "Hello World".to_string()
+            },
+        ]
+    )
 }

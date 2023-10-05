@@ -27,7 +27,11 @@ pub fn argparse(mut args: Args) -> Arguments {
 
     while let Some(arg) = args.next() {
         if arg.starts_with("--") {
-            options.push(arg.trim_start_matches("--").to_string());
+            options.extend(
+                arg.trim_start_matches("--")
+                    .split('-')
+                    .map(|s| s.to_string()),
+            );
         } else if arg.starts_with("-") {
             flags.extend(arg.chars().skip(1).map(|c| c.to_string()));
         } else {
@@ -65,4 +69,56 @@ pub struct Arguments {
     pub flags: Vec<String>,
     pub command: String,
     pub arguments: Vec<String>,
+}
+
+#[test]
+fn argument_parser() {
+    fn argparse(args: Vec<String>) -> Arguments {
+        let mut options: Vec<String> = vec![];
+        let mut flags: Vec<String> = vec![];
+        let mut arguments: Vec<String> = vec![];
+
+        let mut args = args.iter();
+
+        while let Some(arg) = args.next() {
+            if arg.starts_with("--") {
+                options.extend(
+                    arg.trim_start_matches("--")
+                        .split('-')
+                        .map(|s| s.to_string()),
+                );
+            } else if arg.starts_with("-") {
+                flags.extend(arg.chars().skip(1).map(|c| c.to_string()));
+            } else {
+                arguments.push(arg.to_string());
+            }
+        }
+
+        let command = if arguments.len() > 0 {
+            arguments.remove(0)
+        } else {
+            String::new()
+        };
+
+        Arguments {
+            options,
+            flags,
+            command,
+            arguments,
+        }
+    }
+    let args = argparse(vec![
+        "klein".to_string(),
+        "--c-c-c".to_string(),
+        "-dd".to_string(),
+        "cey".to_string(),
+    ]);
+
+    assert_eq!(args.command, "klein".to_string());
+    assert_eq!(args.arguments, vec!["cey".to_string()]);
+    assert_eq!(
+        args.options,
+        vec!["c".to_string(), "c".to_string(), "c".to_string()]
+    );
+    assert_eq!(args.flags, vec!["d".to_string(), "d".to_string()]);
 }

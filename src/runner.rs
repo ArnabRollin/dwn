@@ -54,3 +54,18 @@ pub fn run(
         return None;
     }
 }
+
+#[test]
+fn line_runner() {
+    use crate::dwn::FUNCTIONS;
+    use crate::dwn::VARIABLES;
+
+    let none = run(
+        "say \"Hello World!\"".to_string(),
+        1,
+        FUNCTIONS.read().unwrap(),
+        VARIABLES.read().unwrap(),
+    );
+
+    assert_eq!(none, None);
+}
