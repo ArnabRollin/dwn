@@ -7,14 +7,12 @@ pub fn run(
     line_count: usize,
     functions: RwLockReadGuard<
         '_,
-        std::collections::HashMap<&str, fn(Vec<&Token>) -> (Option<String>, Option<String>)>,
+        std::collections::HashMap<&str, fn(Vec<Token>) -> (Option<String>, Option<String>)>,
     >,
     variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
 ) -> Option<String> {
     let functions_ = functions.clone();
     let tokens = tokenize(line, functions, variables);
-
-    // println!("TOKENS: {tokens:?}");
 
     if tokens.len() > 0 {
         match tokens[0].ty {
@@ -23,11 +21,15 @@ pub fn run(
 
                 match f {
                     Some(f) => {
-                        let mut args: Vec<&Token> = vec![];
+                        let mut args: Vec<Token> = vec![];
+                        let mut tokens = tokens.iter();
 
-                        for token in &tokens[1..] {
-                            args.push(token);
+                        tokens.next();
+
+                        for token in tokens {
+                            args.push(Token { ..token.clone() })
                         }
+
                         let ret = f(args);
 
                         let feedback = ret.0;

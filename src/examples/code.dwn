@@ -1,3 +1,7 @@
 let username = (ask "What is your name? ") ; Asking the user their name...
 
 say "Hello" username "!" ; Greet the user...
+
+let myname = "ExamplePerson"
+
+say "My name is" myname "."
