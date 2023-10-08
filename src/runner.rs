@@ -7,15 +7,15 @@ pub fn run(
     line_count: usize,
     functions: RwLockReadGuard<
         '_,
-        std::collections::HashMap<&str, fn(Vec<Token>) -> (Option<String>, Option<String>)>,
+        std::collections::HashMap<&str, fn(Vec<Token>) -> Result<Token, String>>,
     >,
     variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
-) -> Option<String> {
+) -> Token {
     let functions_ = functions.clone();
     let tokens = tokenize(line, functions, variables);
 
     if tokens.len() > 0 {
-        match tokens[0].ty {
+        match tokens[0].ty.clone() {
             TokenTypes::FUNC => {
                 let f = functions_.get(tokens[0].val.as_str());
 
@@ -32,14 +32,12 @@ pub fn run(
 
                         let ret = f(args);
 
-                        let feedback = ret.0;
-
-                        match feedback {
-                            Some(err) => {
+                        match ret {
+                            Ok(token) => return token,
+                            Err(err) => {
                                 eprintln!("\nError on line {}: {}", line_count + 1, err);
                                 exit(1);
                             }
-                            None => return ret.1,
                         }
                     }
                     None => {
@@ -48,10 +46,20 @@ pub fn run(
                     }
                 }
             }
-            _ => return None,
+            _ => {
+                return Token {
+                    ty: TokenTypes::STRING,
+                    modifiers: vec![],
+                    val: "None".to_string(),
+                }
+            }
         }
     } else {
-        return None;
+        return Token {
+            ty: TokenTypes::STRING,
+            modifiers: vec![],
+            val: "None".to_string(),
+        };
     }
 }
 
@@ -67,5 +75,5 @@ fn line_runner() {
         VARIABLES.read().unwrap(),
     );
 
-    assert_eq!(none, None);
+    assert_eq!(none.val, "None".to_string());
 }

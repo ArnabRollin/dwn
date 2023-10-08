@@ -5,3 +5,7 @@ say "Hello" username "!" ; Greet the user...
 let myname = "ExamplePerson"
 
 say "My name is" myname "."
+
+say "1 - 1 is" (1 - 1)
+say "The sum of 123 and 678 is" (sum 123 678)
+say "100 + 0.5 is" (100 + 0.5)

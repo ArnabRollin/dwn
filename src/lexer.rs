@@ -1,4 +1,4 @@
-use std::sync::RwLockReadGuard;
+use std::{process::exit, sync::RwLockReadGuard};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenTypes {
@@ -6,6 +6,8 @@ pub enum TokenTypes {
     FUNC,
     STRING,
     LITERAL,
+    INT,
+    FLOAT,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -24,7 +26,7 @@ pub fn tokenize(
     data: String,
     functions: RwLockReadGuard<
         '_,
-        std::collections::HashMap<&str, fn(Vec<Token>) -> (Option<String>, Option<String>)>,
+        std::collections::HashMap<&str, fn(Vec<Token>) -> Result<Token, String>>,
     >,
     variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
 ) -> Vec<Token> {
@@ -33,6 +35,7 @@ pub fn tokenize(
     let mut in_string = false;
     let mut string_token = String::new();
     let mut in_variable_set = false;
+    let mut in_operator = false;
 
     let mut literal = String::new();
     let mut in_literal = false;
@@ -47,6 +50,7 @@ pub fn tokenize(
             in_variable_set = false;
             continue;
         }
+
         let word = if raw_word.starts_with('(') && !in_string {
             in_literal = true;
             &raw_word[1..]
@@ -99,6 +103,190 @@ pub fn tokenize(
         }
 
         if word == ";" && !in_string {
+            continue;
+        }
+        if word == "+" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    _ => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "sum".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+        if word == "-" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    _ => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "difference".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+        if word == "*" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    _ => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "product".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+        if word == "/" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    _ => {
+                        eprintln!("Error: No first number for operator!");
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "quotient".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+
+        if word.parse::<i32>().is_ok() && !in_string {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::INT,
+                    modifiers: if in_func || in_operator {
+                        if in_operator {
+                            in_operator = false;
+                        }
+
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: word.to_string(),
+                })
+            }
+
+            continue;
+        }
+
+        if word.parse::<f32>().is_ok() && !in_string {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::FLOAT,
+                    modifiers: if in_func || in_operator {
+                        if in_operator {
+                            in_operator = false;
+                        }
+
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: word.to_string(),
+                })
+            }
+
             continue;
         }
 
