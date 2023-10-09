@@ -1,7 +1,19 @@
+//! This is the file that is used to create a framework file for extensions.
+
 use std::{fs, process::exit};
 
 use crate::dwn::{FUNCTIONS, VARIABLES};
 
+/// Writes the framework to a framework.fw file
+///
+/// Examples:
+///
+/// ```rust
+/// use std::fs;
+///
+/// make_framework()
+/// fs::read("framework.fw")?;
+/// ```
 pub fn make_framework() {
     let mut text = String::from("funcs:\n");
 

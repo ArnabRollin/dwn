@@ -1,7 +1,22 @@
+//! The runner for Dawn (dwn)
+
 use crate::lexer::{tokenize, Token, TokenTypes};
 use std::process::exit;
 use std::sync::RwLockReadGuard;
 
+/// The runner function
+///
+/// Examples:
+///
+/// ```rust
+/// let none = run(
+///     "say \"Hello World!\"".to_string(),
+///     1,
+///     FUNCTIONS.read().unwrap(),
+///     VARIABLES.read().unwrap(),
+/// );
+/// assert_eq!(none.val, "None".to_string());
+/// ```
 pub fn run(
     line: String,
     line_count: usize,

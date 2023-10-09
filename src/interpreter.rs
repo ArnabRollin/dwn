@@ -1,3 +1,5 @@
+//! The interpreter for Dawn (dwn)
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::exit;
@@ -5,6 +7,7 @@ use std::process::exit;
 use crate::dwn::{FUNCTIONS, VARIABLES};
 use crate::runner::run;
 
+/// The function used to interpret files.
 pub fn interpret_file(file: Option<&String>) {
     let file_default = &String::new();
     let file = file.unwrap_or(file_default);
@@ -28,6 +31,21 @@ pub fn interpret_file(file: Option<&String>) {
     }
 }
 
+/// The function to remove every character in `text` after `ch` is reached (including `ch`).
+///
+/// Examples:
+///
+/// ```rust
+/// let new = remove_all_after("say \"Hello!\" ; abcdefghij...".to_string(), ';');
+///
+/// assert_eq!(new, "say \"Hello!\" ".to_string());
+/// ```
 fn remove_all_after(text: String, ch: char) -> String {
     text.split(ch).next().unwrap().to_string()
+}
+
+#[test]
+fn removing_all_after() {
+    let new = remove_all_after("say \"Hello!\" ; abcdefghij...".to_string(), ';');
+    assert_eq!(new, "say \"Hello!\" ".to_string());
 }

@@ -1,5 +1,8 @@
+//! The lexer for Dawn (dwn)
+
 use std::{process::exit, sync::RwLockReadGuard};
 
+/// The token types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenTypes {
     VARIABLE,
@@ -10,11 +13,13 @@ pub enum TokenTypes {
     FLOAT,
 }
 
+/// The token modifiers.
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenModifiers {
     ARGS,
 }
 
+/// The token struct.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub ty: TokenTypes,
@@ -22,6 +27,33 @@ pub struct Token {
     pub val: String,
 }
 
+/// The tokenizer function.
+///
+/// Examples:
+///
+/// ```rust
+/// let tokens = tokenize(
+///     "say \"Hello World\"".to_string(),
+///     FUNCTIONS.read().unwrap(),
+///     VARIABLES.read().unwrap(),
+/// );
+///
+/// assert_eq!(
+///     tokens,
+///     vec![
+///         Token {
+///             ty: TokenTypes::FUNC,
+///             modifiers: vec![],
+///             val: "say".to_string()
+///         },
+///         Token {
+///             ty: TokenTypes::STRING,
+///             modifiers: vec![TokenModifiers::ARGS],
+///             val: "Hello World".to_string()
+///         },
+///     ]
+/// )
+/// ```
 pub fn tokenize(
     data: String,
     functions: RwLockReadGuard<

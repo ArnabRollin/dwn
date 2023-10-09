@@ -1,3 +1,5 @@
+//! This is the main file for the definitions for Dawn's (dwn's) functions and variables
+
 use std::{
     collections::HashMap,
     io::{stdin, stdout, Write},
@@ -10,6 +12,15 @@ use crate::{
 };
 
 lazy_static! {
+    /// The functions HashMap
+    ///
+    /// Examples:
+    ///
+    /// ```rust
+    /// let functions = FUNCTIONS.read().unwrap();
+    ///
+    /// assert!(functions.contains_key(&"say"))
+    /// ```
     pub static ref FUNCTIONS: RwLock<HashMap<&'static str, fn(Vec<Token>) -> Result<Token, String>>> = {
         let mut m = HashMap::new();
         m.insert("say", say as fn(Vec<Token>) -> Result<Token, String>);
@@ -40,6 +51,14 @@ lazy_static! {
     };
 }
 lazy_static! {
+    /// The variables HashMap
+    ///
+    /// Examples:
+    ///
+    /// ```rust
+    /// let variables = VARIABLES.read().unwrap();
+    /// assert!(variables.contains_key(&"$hello"))
+    /// ```
     pub static ref VARIABLES: RwLock<HashMap<String, String>> = {
         let mut m = HashMap::new();
         m.insert(String::from("$hello"), String::from("Hello, World!"));
@@ -48,6 +67,36 @@ lazy_static! {
     };
 }
 
+/// Get all arguments for functions
+///
+/// Examples:
+///
+/// ```rust
+/// let tokens = vec![
+///     Token {
+///           ty: TokenTypes::VARIABLE,
+///           modifiers: vec![TokenModifiers::ARGS],
+///           val: "a"
+///     },
+///     Token {
+///           ty: TokenTypes::VARIABLE,
+///           modifiers: vec![],
+///           val: "b"  
+///     }
+/// ];
+/// let args = get_args(tokens);
+///
+/// assert_eq!(
+///     args,
+///     vec![
+///         Token {
+///             ty: TokenTypes::VARIABLE,
+///             modifiers: vec![TokenModifiers::ARGS],
+///             val: "a"
+///         }
+///     ]
+/// );
+/// ```
 fn get_args(tokens: Vec<Token>) -> Vec<Token> {
     let mut args: Vec<Token> = vec![];
 
@@ -70,6 +119,15 @@ fn get_args(tokens: Vec<Token>) -> Vec<Token> {
     args
 }
 
+/// Gets the functions HashMap
+///
+/// Examples:
+///
+/// ```rust
+/// let functions = get_funcs();
+///
+/// assert!(functions.contains_key(&"say"))
+/// ```
 fn get_funcs(
 ) -> RwLockReadGuard<'static, HashMap<&'static str, fn(Vec<Token>) -> Result<Token, String>>> {
     FUNCTIONS
@@ -77,6 +135,15 @@ fn get_funcs(
         .expect("Error: Another user of this mutex panicked while holding the mutex!")
 }
 
+/// Gets the variables HashMap
+///
+/// Examples:
+///
+/// ```rust
+/// let variables = get_variables();
+///
+/// assert!(variables.contains_key(&"$hello"))
+/// ```
 fn get_variables() -> RwLockReadGuard<'static, HashMap<String, String>> {
     VARIABLES
         .read()

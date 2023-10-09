@@ -1,3 +1,5 @@
+//! This file is used to run the IDLE for Dawn (dwn)
+
 use std::{
     io::{stdin, stdout, Write},
     process::exit,
@@ -8,6 +10,7 @@ use crate::{
     runner::run,
 };
 
+/// The IDLE function
 pub fn idle() {
     let mut count = 1;
 

@@ -1,5 +1,4 @@
-//! Dawn (dwn) is the language interpreter for Dawn.
-#![deny(missing_docs)]
+#[doc = include_str!("../README.md")]
 #[macro_use]
 extern crate lazy_static;
 
