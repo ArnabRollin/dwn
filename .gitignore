@@ -1,3 +1,4 @@
 /target
-tasks.json
-.DS_Store
+/tasks.json
+/.DS_Store
+/tests

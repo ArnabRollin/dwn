@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::exit;
 
-use crate::dwn::{FUNCTIONS, VARIABLES};
+use crate::dwn::{get_funcs, Metadata};
 use crate::runner::run;
 
 /// The function used to interpret files.
@@ -20,13 +20,18 @@ pub fn interpret_file(file: Option<&String>) {
     let reader =
         BufReader::new(File::open(file).expect(format!("Cannot open file `{}`", file).as_str()));
 
+    let mut scope = 0;
+
     for (count, line) in reader.lines().enumerate() {
         let line = remove_all_after(line.unwrap(), ';');
+
         run(
             line.trim().to_string(),
-            count,
-            FUNCTIONS.read().unwrap(),
-            VARIABLES.read().unwrap(),
+            get_funcs(),
+            &mut Metadata {
+                line_count: count,
+                scope: &mut scope,
+            },
         );
     }
 }

@@ -3,6 +3,7 @@
 use std::{
     collections::HashMap,
     io::{stdin, stdout, Write},
+    process::exit,
     sync::{RwLock, RwLockReadGuard},
 };
 
@@ -10,6 +11,17 @@ use crate::{
     lexer::{Token, TokenModifiers, TokenTypes},
     runner::run,
 };
+
+#[derive(Clone)]
+pub struct Variable {
+    value: Token,
+    pub scope: u32,
+}
+
+pub struct Metadata<'a> {
+    pub line_count: usize,
+    pub scope: &'a mut u32,
+}
 
 lazy_static! {
     /// The functions HashMap
@@ -21,30 +33,30 @@ lazy_static! {
     ///
     /// assert!(functions.contains_key(&"say"))
     /// ```
-    pub static ref FUNCTIONS: RwLock<HashMap<&'static str, fn(Vec<Token>) -> Result<Token, String>>> = {
+    pub static ref FUNCTIONS: RwLock<HashMap<&'static str, for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>>> = {
         let mut m = HashMap::new();
-        m.insert("say", say as fn(Vec<Token>) -> Result<Token, String>);
+        m.insert("say", say as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>);
         m.insert(
             "short_say",
-            short_say as fn(Vec<Token>) -> Result<Token, String>,
+            short_say as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
-        m.insert("ask", ask as fn(Vec<Token>) -> Result<Token, String>);
+        m.insert("ask", ask as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>);
         m.insert(
             "create_var",
-            create_var as fn(Vec<Token>) -> Result<Token, String>,
+            create_var as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
-        m.insert("sum", sum as fn(Vec<Token>) -> Result<Token, String>);
+        m.insert("sum", sum as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>);
         m.insert(
             "difference",
-            difference as fn(Vec<Token>) -> Result<Token, String>,
+            difference as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
         m.insert(
             "product",
-            product as fn(Vec<Token>) -> Result<Token, String>,
+            product as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
         m.insert(
             "quotient",
-            quotient as fn(Vec<Token>) -> Result<Token, String>,
+            quotient as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
 
         RwLock::new(m)
@@ -59,9 +71,13 @@ lazy_static! {
     /// let variables = VARIABLES.read().unwrap();
     /// assert!(variables.contains_key(&"$hello"))
     /// ```
-    pub static ref VARIABLES: RwLock<HashMap<String, String>> = {
+    pub static ref VARIABLES: RwLock<HashMap<String, Variable>> = {
         let mut m = HashMap::new();
-        m.insert(String::from("$hello"), String::from("Hello, World!"));
+        m.insert(String::from("$hello"), Variable { value: Token {
+            ty: TokenTypes::STRING,
+            modifiers: vec![],
+            val: "Hello, World!".to_string(),
+        }, scope: 0 });
 
         RwLock::new(m)
     };
@@ -84,7 +100,7 @@ lazy_static! {
 ///           val: "b"  
 ///     }
 /// ];
-/// let args = get_args(tokens);
+/// let args = get_args(tokens, meta);
 ///
 /// assert_eq!(
 ///     args,
@@ -97,7 +113,7 @@ lazy_static! {
 ///     ]
 /// );
 /// ```
-fn get_args(tokens: Vec<Token>) -> Vec<Token> {
+fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
     let mut args: Vec<Token> = vec![];
 
     for token in tokens {
@@ -107,8 +123,29 @@ fn get_args(tokens: Vec<Token>) -> Vec<Token> {
 
         let token = match token.ty {
             TokenTypes::LITERAL => {
-                let ret = run(token.val, 0, get_funcs(), get_variables());
+                let ret = run(token.val, get_funcs(), meta);
                 ret
+            }
+            TokenTypes::VARIABLE => {
+                let variables = get_variables();
+                let variable = variables.get(&token.val);
+                let variable = match variable {
+                    Some(var) => var,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: Variable '{}' does not exist!",
+                            meta.line_count + 1,
+                            token.val
+                        );
+                        exit(1);
+                    }
+                };
+                let val = &variable.value;
+                Token {
+                    ty: val.ty.clone(),
+                    modifiers: val.modifiers.clone(),
+                    val: val.val.to_string(),
+                }
             }
             _ => token,
         };
@@ -116,6 +153,7 @@ fn get_args(tokens: Vec<Token>) -> Vec<Token> {
         args.push(token);
     }
 
+    println!("Args: {args:?}");
     args
 }
 
@@ -128,8 +166,10 @@ fn get_args(tokens: Vec<Token>) -> Vec<Token> {
 ///
 /// assert!(functions.contains_key(&"say"))
 /// ```
-fn get_funcs(
-) -> RwLockReadGuard<'static, HashMap<&'static str, fn(Vec<Token>) -> Result<Token, String>>> {
+pub fn get_funcs() -> RwLockReadGuard<
+    'static,
+    HashMap<&'static str, for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>>,
+> {
     FUNCTIONS
         .read()
         .expect("Error: Another user of this mutex panicked while holding the mutex!")
@@ -144,25 +184,17 @@ fn get_funcs(
 ///
 /// assert!(variables.contains_key(&"$hello"))
 /// ```
-fn get_variables() -> RwLockReadGuard<'static, HashMap<String, String>> {
+pub fn get_variables() -> RwLockReadGuard<'static, HashMap<String, Variable>> {
     VARIABLES
         .read()
         .expect("Error: Another user of this mutex panicked while holding the mutex!")
 }
 
-fn say(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
-    let variables = get_variables();
+fn say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
 
     for arg in args {
         match arg.ty {
-            TokenTypes::VARIABLE => print!(
-                "{}",
-                match variables.get(&arg.val) {
-                    Some(val) => val,
-                    None => return Err(format!("Variable not found: {}", arg.val)),
-                }
-            ),
             _ => print!("{} ", arg.val),
         };
     }
@@ -176,19 +208,11 @@ fn say(tokens: Vec<Token>) -> Result<Token, String> {
     })
 }
 
-fn short_say(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
-    let variables = get_variables();
+fn short_say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
 
     for arg in args {
         match arg.ty {
-            TokenTypes::VARIABLE => print!(
-                "{}",
-                match variables.get(&arg.val) {
-                    Some(val) => val,
-                    None => return Err(format!("Variable not found: {}", arg.val)),
-                }
-            ),
             _ => print!("{} ", arg.val),
         };
     }
@@ -200,8 +224,8 @@ fn short_say(tokens: Vec<Token>) -> Result<Token, String> {
     })
 }
 
-fn ask(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
 
     if args.len() < 1 {
         return Err("Not enough arguments!".to_string());
@@ -237,8 +261,8 @@ fn ask(tokens: Vec<Token>) -> Result<Token, String> {
     })
 }
 
-fn create_var(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
     let var_name = args[0].val.to_string();
     let var_value = args[1].val.to_string();
 
@@ -246,7 +270,17 @@ fn create_var(tokens: Vec<Token>) -> Result<Token, String> {
         .write()
         .expect("Error: Another user of this mutex panicked while holding the mutex!");
 
-    variables.insert(var_name, var_value);
+    variables.insert(
+        var_name,
+        Variable {
+            value: Token {
+                ty: args[1].ty.clone(),
+                modifiers: args[1].modifiers.clone(),
+                val: var_value,
+            },
+            scope: *meta.scope,
+        },
+    );
 
     Ok(Token {
         ty: TokenTypes::STRING,
@@ -255,8 +289,8 @@ fn create_var(tokens: Vec<Token>) -> Result<Token, String> {
     })
 }
 
-fn sum(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -292,8 +326,8 @@ fn sum(tokens: Vec<Token>) -> Result<Token, String> {
         });
     }
 }
-fn difference(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -329,8 +363,8 @@ fn difference(tokens: Vec<Token>) -> Result<Token, String> {
         });
     }
 }
-fn product(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -366,8 +400,8 @@ fn product(tokens: Vec<Token>) -> Result<Token, String> {
         });
     }
 }
-fn quotient(tokens: Vec<Token>) -> Result<Token, String> {
-    let args = get_args(tokens);
+fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {

@@ -1,6 +1,8 @@
 //! The lexer for Dawn (dwn)
 
-use std::{process::exit, sync::RwLockReadGuard};
+use std::process::exit;
+
+use crate::dwn::{get_funcs, Metadata, VARIABLES};
 
 /// The token types.
 #[derive(Clone, Debug, PartialEq)]
@@ -11,6 +13,7 @@ pub enum TokenTypes {
     LITERAL,
     INT,
     FLOAT,
+    NAME,
 }
 
 /// The token modifiers.
@@ -54,14 +57,7 @@ pub struct Token {
 ///     ]
 /// )
 /// ```
-pub fn tokenize(
-    data: String,
-    functions: RwLockReadGuard<
-        '_,
-        std::collections::HashMap<&str, fn(Vec<Token>) -> Result<Token, String>>,
-    >,
-    variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
-) -> Vec<Token> {
+pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
     let mut in_func = false;
     let mut in_string = false;
@@ -72,10 +68,13 @@ pub fn tokenize(
     let mut literal = String::new();
     let mut in_literal = false;
 
+    let functions = get_funcs();
+    let mut variables = VARIABLES.write().unwrap();
+
     for raw_word in data.split(' ') {
         if in_variable_set {
             tokens.push(Token {
-                ty: TokenTypes::VARIABLE,
+                ty: TokenTypes::STRING,
                 modifiers: vec![TokenModifiers::ARGS],
                 val: raw_word.to_string(),
             });
@@ -118,6 +117,8 @@ pub fn tokenize(
                 });
 
                 literal.clear();
+
+                continue;
             } else {
                 literal.push_str(word);
             }
@@ -132,11 +133,30 @@ pub fn tokenize(
             });
 
             in_func = true;
-        }
 
-        if word == ";" && !in_string {
             continue;
         }
+
+        if word == ";" || word == "=" && !in_string {
+            continue;
+        }
+
+        if variables.contains_key(word) {
+            if !in_literal && !in_string {
+                tokens.push(Token {
+                    ty: TokenTypes::VARIABLE,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: word.to_string(),
+                });
+            }
+
+            continue;
+        }
+
         if word == "+" && !in_string {
             if !in_literal {
                 let first = tokens.pop();
@@ -150,7 +170,7 @@ pub fn tokenize(
                 };
 
                 match first.ty {
-                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
                         eprintln!("Error: No first number for operator!");
                         exit(1);
@@ -186,7 +206,7 @@ pub fn tokenize(
                 };
 
                 match first.ty {
-                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
                         eprintln!("Error: No first number for operator!");
                         exit(1);
@@ -222,7 +242,7 @@ pub fn tokenize(
                 };
 
                 match first.ty {
-                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
                         eprintln!("Error: No first number for operator!");
                         exit(1);
@@ -258,7 +278,7 @@ pub fn tokenize(
                 };
 
                 match first.ty {
-                    TokenTypes::INT | TokenTypes::FLOAT => {}
+                    TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
                         eprintln!("Error: No first number for operator!");
                         exit(1);
@@ -322,17 +342,22 @@ pub fn tokenize(
             continue;
         }
 
-        if variables.contains_key(word) {
-            if !in_literal && !in_string {
-                tokens.push(Token {
-                    ty: TokenTypes::VARIABLE,
-                    modifiers: if in_func {
-                        vec![TokenModifiers::ARGS]
-                    } else {
-                        vec![]
-                    },
-                    val: word.to_string(),
-                });
+        if word == "{" && !in_string {
+            *meta.scope += 1;
+        }
+
+        if word == "}" && !in_string {
+            *meta.scope -= 1;
+            let mut drop_vars: Vec<String> = vec![];
+
+            for (k, v) in variables.clone() {
+                if v.scope == *meta.scope + 1 {
+                    drop_vars.push(k);
+                }
+            }
+
+            for k in drop_vars {
+                variables.remove(&k);
             }
         }
 
@@ -417,6 +442,24 @@ pub fn tokenize(
             }
 
             in_func = true;
+
+            continue;
+        }
+
+        if !in_string && in_func {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::NAME,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: word.to_string(),
+                });
+            }
+
+            continue;
         }
     }
 
@@ -425,12 +468,12 @@ pub fn tokenize(
 
 #[test]
 fn tokenizer() {
-    use crate::dwn::{FUNCTIONS, VARIABLES};
-
     let tokens = tokenize(
         "say \"Hello World\"".to_string(),
-        FUNCTIONS.read().unwrap(),
-        VARIABLES.read().unwrap(),
+        &mut Metadata {
+            line_count: 0,
+            scope: &mut 0,
+        },
     );
 
     assert_eq!(

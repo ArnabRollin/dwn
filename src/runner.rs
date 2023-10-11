@@ -1,5 +1,6 @@
 //! The runner for Dawn (dwn)
 
+use crate::dwn::Metadata;
 use crate::lexer::{tokenize, Token, TokenTypes};
 use std::process::exit;
 use std::sync::RwLockReadGuard;
@@ -19,15 +20,17 @@ use std::sync::RwLockReadGuard;
 /// ```
 pub fn run(
     line: String,
-    line_count: usize,
     functions: RwLockReadGuard<
         '_,
-        std::collections::HashMap<&str, fn(Vec<Token>) -> Result<Token, String>>,
+        std::collections::HashMap<
+            &str,
+            for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        >,
     >,
-    variables: RwLockReadGuard<'_, std::collections::HashMap<String, String>>,
+    meta: &mut Metadata,
 ) -> Token {
     let functions_ = functions.clone();
-    let tokens = tokenize(line, functions, variables);
+    let tokens = tokenize(line, meta);
 
     if tokens.len() > 0 {
         match tokens[0].ty.clone() {
@@ -45,12 +48,12 @@ pub fn run(
                             args.push(Token { ..token.clone() })
                         }
 
-                        let ret = f(args);
+                        let ret = f(args, meta);
 
                         match ret {
                             Ok(token) => return token,
                             Err(err) => {
-                                eprintln!("\nError on line {}: {}", line_count + 1, err);
+                                eprintln!("\nError on line {}: {}", meta.line_count + 1, err);
                                 exit(1);
                             }
                         }
@@ -80,14 +83,15 @@ pub fn run(
 
 #[test]
 fn line_runner() {
-    use crate::dwn::FUNCTIONS;
-    use crate::dwn::VARIABLES;
+    use crate::dwn::get_funcs;
 
     let none = run(
         "say \"Hello World!\"".to_string(),
-        1,
-        FUNCTIONS.read().unwrap(),
-        VARIABLES.read().unwrap(),
+        get_funcs(),
+        &mut Metadata {
+            line_count: 0,
+            scope: &mut 0,
+        },
     );
 
     assert_eq!(none.val, "None".to_string());

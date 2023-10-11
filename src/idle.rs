@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    dwn::{FUNCTIONS, VARIABLES},
+    dwn::{get_funcs, Metadata},
     runner::run,
 };
 
@@ -40,11 +40,15 @@ pub fn idle() {
             break;
         }
 
+        let mut scope = 0;
+
         run(
             code.to_string(),
-            count,
-            FUNCTIONS.read().unwrap(),
-            VARIABLES.read().unwrap(),
+            get_funcs(),
+            &mut Metadata {
+                line_count: count,
+                scope: &mut scope,
+            },
         );
 
         count += 1;
