@@ -12,7 +12,12 @@ use crate::{
 
 /// The IDLE function
 pub fn idle() {
-    let mut count = 1;
+    let mut count: usize = 1;
+    let mut scope = 0;
+    let mut in_scope = false;
+    let mut scope_token = String::new();
+    let mut in_func = false;
+    let mut func_token = String::new();
 
     loop {
         let mut code = String::new();
@@ -40,14 +45,16 @@ pub fn idle() {
             break;
         }
 
-        let mut scope = 0;
-
         run(
             code.to_string(),
             get_funcs(),
             &mut Metadata {
                 line_count: count,
                 scope: &mut scope,
+                in_scope: &mut in_scope,
+                scope_token: &mut scope_token,
+                in_func: &mut in_func,
+                func_token: &mut func_token,
             },
         );
 

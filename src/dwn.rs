@@ -21,6 +21,10 @@ pub struct Variable {
 pub struct Metadata<'a> {
     pub line_count: usize,
     pub scope: &'a mut u32,
+    pub in_scope: &'a mut bool,
+    pub scope_token: &'a mut String,
+    pub in_func: &'a mut bool,
+    pub func_token: &'a mut String,
 }
 
 lazy_static! {
@@ -57,6 +61,10 @@ lazy_static! {
         m.insert(
             "quotient",
             quotient as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "forever",
+            forever as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
 
         RwLock::new(m)
@@ -152,9 +160,27 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
 
         args.push(token);
     }
-
-    println!("Args: {args:?}");
     args
+}
+
+fn run_scope(token: &Token, meta: &mut Metadata) -> Option<String> {
+    match token.ty {
+        TokenTypes::SCOPE => {
+            for line in token.val.lines() {
+                if line.trim() == "break" {
+                    return Some(String::from("break"));
+                } else {
+                    run(line.to_string(), get_funcs(), meta);
+                }
+            }
+
+            return None;
+        }
+        _ => {
+            eprintln!("Error on line {}: Expected scope!", meta.line_count);
+            exit(1);
+        }
+    }
 }
 
 /// Gets the functions HashMap
@@ -436,4 +462,28 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
             val: quotient.to_string(),
         });
     }
+}
+
+fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 1 {
+        return Err("Not enough arguments!".to_string());
+    }
+
+    let scope = args[0].clone();
+
+    loop {
+        let stat = run_scope(&scope, meta);
+
+        if stat.is_some() {
+            break;
+        }
+    }
+
+    Ok(Token {
+        ty: TokenTypes::STRING,
+        modifiers: vec![],
+        val: "None".to_string(),
+    })
 }

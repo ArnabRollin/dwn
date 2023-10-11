@@ -14,6 +14,7 @@ pub enum TokenTypes {
     INT,
     FLOAT,
     NAME,
+    SCOPE,
 }
 
 /// The token modifiers.
@@ -70,6 +71,35 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
     let functions = get_funcs();
     let mut variables = VARIABLES.write().unwrap();
+
+    if *meta.in_scope {
+        if data.starts_with('}') {
+            *meta.in_scope = false;
+            let scope_token = meta.scope_token.to_string();
+            meta.scope_token.clear();
+
+            return vec![
+                Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: (*meta.func_token).to_string(),
+                },
+                Token {
+                    ty: TokenTypes::SCOPE,
+                    modifiers: if *meta.in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: (scope_token).to_string(),
+                },
+            ];
+        } else {
+            meta.scope_token.push_str(&data);
+            meta.scope_token.push('\n');
+            return vec![];
+        }
+    }
 
     for raw_word in data.split(' ') {
         if in_variable_set {
@@ -344,6 +374,14 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
         if word == "{" && !in_string {
             *meta.scope += 1;
+            *meta.in_scope = true;
+
+            if in_func {
+                *meta.in_func = true;
+                *meta.func_token = tokens.last().unwrap().val.to_string();
+            }
+
+            continue;
         }
 
         if word == "}" && !in_string {
@@ -359,6 +397,8 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             for k in drop_vars {
                 variables.remove(&k);
             }
+
+            continue;
         }
 
         if word.starts_with('"') {
@@ -473,6 +513,10 @@ fn tokenizer() {
         &mut Metadata {
             line_count: 0,
             scope: &mut 0,
+            in_scope: &mut false,
+            scope_token: &mut String::new(),
+            in_func: &mut false,
+            func_token: &mut String::new(),
         },
     );
 

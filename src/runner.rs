@@ -48,7 +48,15 @@ pub fn run(
                             args.push(Token { ..token.clone() })
                         }
 
-                        let ret = f(args, meta);
+                        let ret = if !*meta.in_scope {
+                            f(args, meta)
+                        } else {
+                            return Token {
+                                ty: TokenTypes::STRING,
+                                modifiers: vec![],
+                                val: "None".to_string(),
+                            };
+                        };
 
                         match ret {
                             Ok(token) => return token,
@@ -91,6 +99,10 @@ fn line_runner() {
         &mut Metadata {
             line_count: 0,
             scope: &mut 0,
+            in_scope: &mut false,
+            scope_token: &mut String::new(),
+            in_func: &mut false,
+            func_token: &mut String::new(),
         },
     );
 
