@@ -66,6 +66,10 @@ lazy_static! {
             "forever",
             forever as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
+        m.insert(
+            "scope",
+            scope as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
 
         RwLock::new(m)
     };
@@ -155,6 +159,14 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
                     val: val.val.to_string(),
                 }
             }
+            TokenTypes::NAME => {
+                eprintln!(
+                    "Error on line {}: Name '{}' does not exist!",
+                    meta.line_count + 1,
+                    token.val
+                );
+                exit(1);
+            }
             _ => token,
         };
 
@@ -163,15 +175,43 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
     args
 }
 
+/// Runs a scope in Dawn (dwn)
+///
+/// Examples:
+///
+/// ```rust
+/// let stat: Option<String> = run_scope(token, meta);
+///
+/// match stat {
+///     Some(stat) => println!("Breaking scope!"),
+///     None => println!("It's fine..."),
+/// }
+/// ```
 fn run_scope(token: &Token, meta: &mut Metadata) -> Option<String> {
     match token.ty {
         TokenTypes::SCOPE => {
+            *meta.scope += 1;
+
             for line in token.val.lines() {
                 if line.trim() == "break" {
                     return Some(String::from("break"));
                 } else {
                     run(line.to_string(), get_funcs(), meta);
                 }
+            }
+
+            *meta.scope -= 1;
+            let mut drop_vars: Vec<String> = vec![];
+            let mut variables = VARIABLES.write().unwrap();
+
+            for (k, v) in variables.clone() {
+                if v.scope == *meta.scope + 1 {
+                    drop_vars.push(k);
+                }
+            }
+
+            for k in drop_vars {
+                variables.remove(&k);
             }
 
             return None;
@@ -479,6 +519,41 @@ fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         if stat.is_some() {
             break;
         }
+    }
+
+    Ok(Token {
+        ty: TokenTypes::STRING,
+        modifiers: vec![],
+        val: "None".to_string(),
+    })
+}
+
+fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 1 {
+        return Err("Not enough arguments!".to_string());
+    }
+
+    let scope = args[0].clone();
+    *meta.scope += 1;
+
+    for line in scope.val.lines() {
+        run(line.to_string(), get_funcs(), meta);
+    }
+
+    *meta.scope -= 1;
+    let mut drop_vars: Vec<String> = vec![];
+    let mut variables = VARIABLES.write().unwrap();
+
+    for (k, v) in variables.clone() {
+        if v.scope == *meta.scope + 1 {
+            drop_vars.push(k);
+        }
+    }
+
+    for k in drop_vars {
+        variables.remove(&k);
     }
 
     Ok(Token {

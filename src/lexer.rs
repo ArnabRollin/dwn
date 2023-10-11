@@ -70,7 +70,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     let mut in_literal = false;
 
     let functions = get_funcs();
-    let mut variables = VARIABLES.write().unwrap();
+    let variables = VARIABLES.read().unwrap();
 
     if *meta.in_scope {
         if data.starts_with('}') {
@@ -82,7 +82,15 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 Token {
                     ty: TokenTypes::FUNC,
                     modifiers: vec![],
-                    val: (*meta.func_token).to_string(),
+                    val: if *meta.in_func {
+                        (*meta.func_token).to_string()
+                    } else {
+                        eprintln!(
+                            "Error on line {}: No function found to run scope!",
+                            meta.line_count
+                        );
+                        exit(1);
+                    },
                 },
                 Token {
                     ty: TokenTypes::SCOPE,
@@ -194,7 +202,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 let first = match first {
                     Some(token) => token,
                     None => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '+' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 };
@@ -202,7 +213,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 match first.ty {
                     TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '+' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 }
@@ -230,7 +244,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 let first = match first {
                     Some(token) => token,
                     None => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '-' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 };
@@ -238,7 +255,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 match first.ty {
                     TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '-' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 }
@@ -266,7 +286,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 let first = match first {
                     Some(token) => token,
                     None => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '*' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 };
@@ -274,7 +297,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 match first.ty {
                     TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '*' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 }
@@ -302,7 +328,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 let first = match first {
                     Some(token) => token,
                     None => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '/' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 };
@@ -310,7 +339,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 match first.ty {
                     TokenTypes::INT | TokenTypes::FLOAT | TokenTypes::VARIABLE => {}
                     _ => {
-                        eprintln!("Error: No first number for operator!");
+                        eprintln!(
+                            "Error on line {}: No first number for operator '/' !",
+                            meta.line_count
+                        );
                         exit(1);
                     }
                 }
@@ -379,23 +411,6 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if in_func {
                 *meta.in_func = true;
                 *meta.func_token = tokens.last().unwrap().val.to_string();
-            }
-
-            continue;
-        }
-
-        if word == "}" && !in_string {
-            *meta.scope -= 1;
-            let mut drop_vars: Vec<String> = vec![];
-
-            for (k, v) in variables.clone() {
-                if v.scope == *meta.scope + 1 {
-                    drop_vars.push(k);
-                }
-            }
-
-            for k in drop_vars {
-                variables.remove(&k);
             }
 
             continue;
