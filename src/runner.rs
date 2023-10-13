@@ -52,7 +52,7 @@ pub fn run(
                             f(args, meta)
                         } else {
                             return Token {
-                                ty: TokenTypes::STRING,
+                                ty: TokenTypes::NONE,
                                 modifiers: vec![],
                                 val: "None".to_string(),
                             };
@@ -74,7 +74,7 @@ pub fn run(
             }
             _ => {
                 return Token {
-                    ty: TokenTypes::STRING,
+                    ty: TokenTypes::NONE,
                     modifiers: vec![],
                     val: "None".to_string(),
                 }
@@ -82,7 +82,7 @@ pub fn run(
         }
     } else {
         return Token {
-            ty: TokenTypes::STRING,
+            ty: TokenTypes::NONE,
             modifiers: vec![],
             val: "None".to_string(),
         };

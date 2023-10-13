@@ -15,6 +15,7 @@ pub enum TokenTypes {
     FLOAT,
     NAME,
     SCOPE,
+    NONE,
 }
 
 /// The token modifiers.
@@ -110,16 +111,6 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     }
 
     for raw_word in data.split(' ') {
-        if in_variable_set {
-            tokens.push(Token {
-                ty: TokenTypes::STRING,
-                modifiers: vec![TokenModifiers::ARGS],
-                val: raw_word.to_string(),
-            });
-            in_variable_set = false;
-            continue;
-        }
-
         let word = if raw_word.starts_with('(') && !in_string {
             in_literal = true;
             &raw_word[1..]
@@ -159,7 +150,21 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 continue;
             } else {
                 literal.push_str(word);
+                continue;
             }
+        }
+
+        if word == "None" && !in_string {
+            tokens.push(Token {
+                ty: TokenTypes::NONE,
+                modifiers: if in_func {
+                    vec![TokenModifiers::ARGS]
+                } else {
+                    vec![]
+                },
+                val: "None".to_string(),
+            });
+            continue;
         }
 
         if word == "let" && !in_string {
@@ -498,6 +503,16 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
             in_func = true;
 
+            continue;
+        }
+
+        if in_variable_set {
+            tokens.push(Token {
+                ty: TokenTypes::STRING,
+                modifiers: vec![TokenModifiers::ARGS],
+                val: word.to_string(),
+            });
+            in_variable_set = false;
             continue;
         }
 

@@ -41,6 +41,13 @@ fn main() {
         exit(0);
     }
 
+    if arguments.options.contains(&"version".to_string())
+        || arguments.flags.contains(&"v".to_string())
+    {
+        println!("0.4.0");
+        exit(0);
+    }
+
     match arguments.command.as_str() {
         "help" => help(arguments.arguments.get(0)),
         "run" | "r" => interpret_file(arguments.arguments.get(0)),

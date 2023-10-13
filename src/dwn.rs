@@ -268,7 +268,7 @@ fn say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     println!();
 
     Ok(Token {
-        ty: TokenTypes::STRING,
+        ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
     })
@@ -284,7 +284,7 @@ fn short_say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     Ok(Token {
-        ty: TokenTypes::STRING,
+        ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
     })
@@ -332,6 +332,11 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     let var_name = args[0].val.to_string();
     let var_value = args[1].val.to_string();
 
+    match args[0].ty {
+        TokenTypes::NONE => return Err(format!("Cannot accept none as variable name!")),
+        _ => {}
+    }
+
     let mut variables = VARIABLES
         .write()
         .expect("Error: Another user of this mutex panicked while holding the mutex!");
@@ -349,7 +354,7 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     );
 
     Ok(Token {
-        ty: TokenTypes::STRING,
+        ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
     })
@@ -522,7 +527,7 @@ fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     Ok(Token {
-        ty: TokenTypes::STRING,
+        ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
     })
@@ -557,7 +562,7 @@ fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     Ok(Token {
-        ty: TokenTypes::STRING,
+        ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
     })
