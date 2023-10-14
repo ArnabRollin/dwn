@@ -16,8 +16,7 @@ pub fn idle() {
     let mut scope = 0;
     let mut in_scope = false;
     let mut scope_token = String::new();
-    let mut in_func = false;
-    let mut func_token = String::new();
+    let mut current_tokens = vec![];
 
     loop {
         let mut code = String::new();
@@ -53,8 +52,7 @@ pub fn idle() {
                 scope: &mut scope,
                 in_scope: &mut in_scope,
                 scope_token: &mut scope_token,
-                in_func: &mut in_func,
-                func_token: &mut func_token,
+                current_tokens: &mut current_tokens,
             },
         );
 

@@ -23,8 +23,7 @@ pub struct Metadata<'a> {
     pub scope: &'a mut u32,
     pub in_scope: &'a mut bool,
     pub scope_token: &'a mut String,
-    pub in_func: &'a mut bool,
-    pub func_token: &'a mut String,
+    pub current_tokens: &'a mut Vec<Token>,
 }
 
 lazy_static! {
@@ -69,6 +68,10 @@ lazy_static! {
         m.insert(
             "scope",
             scope as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "if",
+            if_ as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
 
         RwLock::new(m)
@@ -541,6 +544,56 @@ fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let scope = args[0].clone();
+    *meta.scope += 1;
+
+    for line in scope.val.lines() {
+        run(line.to_string(), get_funcs(), meta);
+    }
+
+    *meta.scope -= 1;
+    let mut drop_vars: Vec<String> = vec![];
+    let mut variables = VARIABLES.write().unwrap();
+
+    for (k, v) in variables.clone() {
+        if v.scope == *meta.scope + 1 {
+            drop_vars.push(k);
+        }
+    }
+
+    for k in drop_vars {
+        variables.remove(&k);
+    }
+
+    Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    })
+}
+
+fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("Not enough arguments!".to_string());
+    }
+
+    let condition = args[0].clone();
+
+    let result = match condition.ty {
+        TokenTypes::BOOL => condition.val,
+        ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+    };
+
+    if result == "false" {
+        return Ok(Token {
+            ty: TokenTypes::NONE,
+            modifiers: vec![],
+            val: "None".to_string(),
+        });
+    }
+
+    let scope = args[1].clone();
     *meta.scope += 1;
 
     for line in scope.val.lines() {

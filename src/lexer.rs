@@ -16,6 +16,7 @@ pub enum TokenTypes {
     NAME,
     SCOPE,
     NONE,
+    BOOL,
 }
 
 /// The token modifiers.
@@ -79,30 +80,27 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             let scope_token = meta.scope_token.to_string();
             meta.scope_token.clear();
 
-            return vec![
-                Token {
-                    ty: TokenTypes::FUNC,
-                    modifiers: vec![],
-                    val: if *meta.in_func {
-                        (*meta.func_token).to_string()
-                    } else {
-                        eprintln!(
-                            "Error on line {}: No function found to run scope!",
-                            meta.line_count
-                        );
-                        exit(1);
-                    },
-                },
-                Token {
+            let mut tokens: Vec<Token> = vec![];
+            for t in meta.current_tokens.clone() {
+                tokens.push(t);
+            }
+
+            match meta.current_tokens[0].ty {
+                TokenTypes::FUNC => tokens.push(Token {
                     ty: TokenTypes::SCOPE,
-                    modifiers: if *meta.in_func {
-                        vec![TokenModifiers::ARGS]
-                    } else {
-                        vec![]
-                    },
-                    val: (scope_token).to_string(),
-                },
-            ];
+                    modifiers: vec![TokenModifiers::ARGS],
+                    val: scope_token,
+                }),
+                _ => {
+                    eprintln!(
+                        "Error on line {}: No function found to run scope!",
+                        meta.line_count
+                    );
+                    exit(1);
+                }
+            }
+
+            return tokens;
         } else {
             meta.scope_token.push_str(&data);
             meta.scope_token.push('\n');
@@ -155,15 +153,45 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
         }
 
         if word == "None" && !in_string {
-            tokens.push(Token {
-                ty: TokenTypes::NONE,
-                modifiers: if in_func {
-                    vec![TokenModifiers::ARGS]
-                } else {
-                    vec![]
-                },
-                val: "None".to_string(),
-            });
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::NONE,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: "None".to_string(),
+                });
+            }
+            continue;
+        }
+        if word == "true" && !in_string {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::BOOL,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: "true".to_string(),
+                });
+            }
+            continue;
+        }
+        if word == "false" && !in_string {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::BOOL,
+                    modifiers: if in_func {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: "false".to_string(),
+                });
+            }
             continue;
         }
 
@@ -413,10 +441,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             *meta.scope += 1;
             *meta.in_scope = true;
 
-            if in_func {
-                *meta.in_func = true;
-                *meta.func_token = tokens.last().unwrap().val.to_string();
-            }
+            *meta.current_tokens = tokens.clone();
 
             continue;
         }
@@ -545,8 +570,7 @@ fn tokenizer() {
             scope: &mut 0,
             in_scope: &mut false,
             scope_token: &mut String::new(),
-            in_func: &mut false,
-            func_token: &mut String::new(),
+            current_tokens: &mut vec![],
         },
     );
 

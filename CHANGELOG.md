@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2023-10-14
+
+### Added
+
+- Boolean type (`true` and `false`)
+- `if` function
+
+### Fixed
+
+- Fixed bug where two arguments cannot be provided to scope-accepting function.
+
 ## [0.5.0] - 2023-10-13
 
 ### Changed
@@ -60,7 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.6.0...HEAD
+
+[0.6.0]: https://github.com/ArnabRollin/dwn/compare/v0.5.0...v0.6.0
 
 [0.5.0]: https://github.com/ArnabRollin/dwn/compare/v0.4.0...v0.5.0
 

@@ -101,8 +101,7 @@ fn line_runner() {
             scope: &mut 0,
             in_scope: &mut false,
             scope_token: &mut String::new(),
-            in_func: &mut false,
-            func_token: &mut String::new(),
+            current_tokens: &mut vec![],
         },
     );
 
