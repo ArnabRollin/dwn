@@ -16,7 +16,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Get homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+        test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/runner/.bashrc
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    - name: Install linux linker
+      run: brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
     - name: Build
-      run: cargo build --verbose
+      run: |
+        rustup target add x86_64-unknown-linux-gnu
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-unknown-linux-gnu-gcc \
+        cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: |
+        rustup target add x86_64-unknown-linux-gnu
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-unknown-linux-gnu-gcc \
+        cargo test --verbose

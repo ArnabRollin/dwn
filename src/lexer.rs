@@ -216,7 +216,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal && !in_string {
                 tokens.push(Token {
                     ty: TokenTypes::VARIABLE,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_operator {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
