@@ -73,6 +73,42 @@ lazy_static! {
             "if",
             if_ as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
+        m.insert(
+            "while",
+            while_ as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "until",
+            until as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "eq",
+            eq as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "gt",
+            gt as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "lt",
+            lt as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "add_assign",
+            add_assign as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "subtract_assign",
+            subtract_assign as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "multiply_assign",
+            multiply_assign as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "divide_assign",
+            divide_assign as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
 
         RwLock::new(m)
     };
@@ -297,7 +333,7 @@ fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     if args.len() < 1 {
-        return Err("Not enough arguments!".to_string());
+        return Err("(ask) Not enough arguments!".to_string());
     }
 
     let mut input = String::new();
@@ -335,6 +371,10 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     let var_name = args[0].val.to_string();
     let var_value = args[1].val.to_string();
 
+    if args.len() < 1 {
+        return Err("(let) Not enough arguments!".to_string());
+    }
+
     match args[0].ty {
         TokenTypes::NONE => return Err(format!("Cannot accept none as variable name!")),
         _ => {}
@@ -365,6 +405,11 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
 
 fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(+) Not enough arguments!".to_string());
+    }
+
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -402,6 +447,11 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(-) Not enough arguments!".to_string());
+    }
+
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -439,6 +489,11 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
 }
 fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(*) Not enough arguments!".to_string());
+    }
+
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -476,6 +531,11 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(/) Not enough arguments!".to_string());
+    }
+
     let first = match args[0].ty.clone() {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
@@ -516,7 +576,7 @@ fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     if args.len() < 1 {
-        return Err("Not enough arguments!".to_string());
+        return Err("(forever) Not enough arguments!".to_string());
     }
 
     let scope = args[0].clone();
@@ -540,7 +600,7 @@ fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     if args.len() < 1 {
-        return Err("Not enough arguments!".to_string());
+        return Err("(scope) Not enough arguments!".to_string());
     }
 
     let scope = args[0].clone();
@@ -575,7 +635,7 @@ fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     if args.len() < 2 {
-        return Err("Not enough arguments!".to_string());
+        return Err("(if) Not enough arguments!".to_string());
     }
 
     let condition = args[0].clone();
@@ -619,4 +679,482 @@ fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         modifiers: vec![],
         val: "None".to_string(),
     })
+}
+
+fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(==) Not enough arguments!".to_string());
+    }
+
+    let first = &args[0];
+    let second = &args[1];
+
+    if first == second {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "true".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "false".to_string(),
+    });
+}
+fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(>) Not enough arguments!".to_string());
+    }
+
+    let first = match args[0].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '>' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match args[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '>' with type {ty:?}"
+            ))
+        }
+    };
+
+    if first > second {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "true".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "false".to_string(),
+    });
+}
+fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(<) Not enough arguments!".to_string());
+    }
+
+    let first = match args[0].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '<' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match args[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '<' with type {ty:?}"
+            ))
+        }
+    };
+
+    if first < second {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "true".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "false".to_string(),
+    });
+}
+
+fn while_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    loop {
+        let args = get_args(tokens.clone(), meta);
+
+        if args.len() < 2 {
+            return Err("(while) Not enough arguments!".to_string());
+        }
+
+        let condition = args[0].clone();
+        let result = match condition.ty {
+            TokenTypes::BOOL => condition.val,
+            ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+        };
+
+        if result == "false" {
+            return Ok(Token {
+                ty: TokenTypes::NONE,
+                modifiers: vec![],
+                val: "None".to_string(),
+            });
+        }
+
+        let scope = args[1].clone();
+        *meta.scope += 1;
+
+        for line in scope.val.lines() {
+            run(line.to_string(), get_funcs(), meta);
+        }
+
+        *meta.scope -= 1;
+        let mut drop_vars: Vec<String> = vec![];
+        let mut variables = VARIABLES.write().unwrap();
+
+        for (k, v) in variables.clone() {
+            if v.scope == *meta.scope + 1 {
+                drop_vars.push(k);
+            }
+        }
+
+        for k in drop_vars {
+            variables.remove(&k);
+        }
+    }
+}
+
+fn until(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    loop {
+        let args = get_args(tokens.clone(), meta);
+
+        if args.len() < 2 {
+            return Err("(until) Not enough arguments!".to_string());
+        }
+
+        let condition = args[0].clone();
+        let result = match condition.ty {
+            TokenTypes::BOOL => condition.val,
+            ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+        };
+
+        if result == "true" {
+            return Ok(Token {
+                ty: TokenTypes::NONE,
+                modifiers: vec![],
+                val: "None".to_string(),
+            });
+        }
+
+        let scope = args[1].clone();
+        *meta.scope += 1;
+
+        for line in scope.val.lines() {
+            run(line.to_string(), get_funcs(), meta);
+        }
+
+        *meta.scope -= 1;
+        let mut drop_vars: Vec<String> = vec![];
+        let mut variables = VARIABLES.write().unwrap();
+
+        for (k, v) in variables.clone() {
+            if v.scope == *meta.scope + 1 {
+                drop_vars.push(k);
+            }
+        }
+
+        for k in drop_vars {
+            variables.remove(&k);
+        }
+    }
+}
+
+fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    if tokens.len() < 2 {
+        return Err("(+=) Not enough arguments!".to_string());
+    }
+
+    let first = match tokens[0].ty.clone() {
+        TokenTypes::VARIABLE => &tokens[0].val,
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '+=' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match tokens[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot add thing of type {ty:?} to variable"
+            ))
+        }
+    };
+
+    let mut variables = VARIABLES.write().unwrap();
+
+    let variable = variables.get_mut(first);
+
+    let variable = match variable {
+        Some(v) => v,
+        None => return Err(format!("Variable `{first}` not found")),
+    };
+
+    let value: f32 = match &variable.value.ty {
+        TokenTypes::INT => variable.value.val.parse().unwrap(),
+        TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '+=' with variable of type {ty:?}"
+            ))
+        }
+    };
+
+    let total = value + second;
+
+    if total.fract() == 0.0 {
+        let total = total as i32;
+
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::INT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    } else {
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::FLOAT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    });
+}
+fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    if tokens.len() < 2 {
+        return Err("(-=) Not enough arguments!".to_string());
+    }
+
+    let first = match tokens[0].ty.clone() {
+        TokenTypes::VARIABLE => &tokens[0].val,
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '-=' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match tokens[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot subtract thing of type {ty:?} from variable"
+            ))
+        }
+    };
+
+    let mut variables = VARIABLES.write().unwrap();
+
+    let variable = variables.get_mut(first);
+
+    let variable = match variable {
+        Some(v) => v,
+        None => return Err(format!("Variable `{first}` not found")),
+    };
+
+    let value: f32 = match &variable.value.ty {
+        TokenTypes::INT => variable.value.val.parse().unwrap(),
+        TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '-=' with variable of type {ty:?}"
+            ))
+        }
+    };
+
+    let total = value - second;
+
+    if total.fract() == 0.0 {
+        let total = total as i32;
+
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::INT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    } else {
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::FLOAT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    });
+}
+
+fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    if tokens.len() < 2 {
+        return Err("(*=) Not enough arguments!".to_string());
+    }
+
+    let first = match tokens[0].ty.clone() {
+        TokenTypes::VARIABLE => &tokens[0].val,
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '*=' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match tokens[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot multiply thing of type {ty:?} with variable"
+            ))
+        }
+    };
+
+    let mut variables = VARIABLES.write().unwrap();
+
+    let variable = variables.get_mut(first);
+
+    let variable = match variable {
+        Some(v) => v,
+        None => return Err(format!("Variable `{first}` not found")),
+    };
+
+    let value: f32 = match &variable.value.ty {
+        TokenTypes::INT => variable.value.val.parse().unwrap(),
+        TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '*=' with variable of type {ty:?}"
+            ))
+        }
+    };
+
+    let total = value * second;
+
+    if total.fract() == 0.0 {
+        let total = total as i32;
+
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::INT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    } else {
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::FLOAT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    });
+}
+
+fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    if tokens.len() < 2 {
+        return Err("(/=) Not enough arguments!".to_string());
+    }
+
+    let first = match tokens[0].ty.clone() {
+        TokenTypes::VARIABLE => &tokens[0].val,
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '/=' with type {ty:?}"
+            ))
+        }
+    };
+    let second = match tokens[1].ty.clone() {
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Variable cannot be divided by thing of type {ty:?}"
+            ))
+        }
+    };
+
+    let mut variables = VARIABLES.write().unwrap();
+
+    let variable = variables.get_mut(first);
+
+    let variable = match variable {
+        Some(v) => v,
+        None => return Err(format!("Variable `{first}` not found")),
+    };
+
+    let value: f32 = match &variable.value.ty {
+        TokenTypes::INT => variable.value.val.parse().unwrap(),
+        TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
+        ty => {
+            return Err(format!(
+                "Invalid type: Cannot use operation '/=' with variable of type {ty:?}"
+            ))
+        }
+    };
+
+    let total = value / second;
+
+    if total.fract() == 0.0 {
+        let total = total as i32;
+
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::INT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    } else {
+        *variable = Variable {
+            value: Token {
+                ty: TokenTypes::FLOAT,
+                modifiers: variable.value.modifiers.clone(),
+                val: total.to_string(),
+            },
+            scope: variable.scope,
+        };
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    });
 }

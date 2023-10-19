@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2023-10-18
+
+### Added
+
+- `while` and `until` loops
+- `==`, `>` and `<` compare operators
+- `+=`, `-=`, `*=` and `/=` "operate and assign" operators
+- Functions now say their name on error.
+
 ## [0.6.1] - 2023-10-14
 
 ### Fixed
@@ -77,7 +86,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.6.1...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.7.0...HEAD
+
+[0.7.0]: https://github.com/ArnabRollin/dwn/compare/v0.6.1...v0.7.0
 
 [0.6.1]: https://github.com/ArnabRollin/dwn/compare/v0.6.0...v0.6.1
 

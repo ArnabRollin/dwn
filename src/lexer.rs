@@ -67,6 +67,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     let mut string_token = String::new();
     let mut in_variable_set = false;
     let mut in_operator = false;
+    let mut in_compare = false;
 
     let mut literal = String::new();
     let mut in_literal = false;
@@ -99,7 +100,6 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     exit(1);
                 }
             }
-
             return tokens;
         } else {
             meta.scope_token.push_str(&data);
@@ -135,7 +135,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
                 tokens.push(Token {
                     ty: TokenTypes::LITERAL,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
@@ -156,7 +156,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::NONE,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
@@ -170,7 +170,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::BOOL,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
@@ -184,7 +184,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::BOOL,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
@@ -216,7 +216,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal && !in_string {
                 tokens.push(Token {
                     ty: TokenTypes::VARIABLE,
-                    modifiers: if in_func || in_operator {
+                    modifiers: if in_func || in_operator || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
@@ -224,6 +224,100 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     val: word.to_string(),
                 });
             }
+
+            continue;
+        }
+
+        if word == "==" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator '==' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "eq".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_compare = true;
+            };
+
+            continue;
+        }
+        if word == ">" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator '>' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "gt".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+        if word == "<" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator '<' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "lt".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
 
             continue;
         }
@@ -397,11 +491,183 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             continue;
         }
 
+        if word == "+=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '+=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::VARIABLE => {}
+                    _ => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '+=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "add_assign".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+
+        if word == "-=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '-=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::VARIABLE => {}
+                    _ => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '-=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "subtract_assign".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+
+        if word == "*=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '*=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::VARIABLE => {}
+                    _ => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '*=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "multiply_assign".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+
+        if word == "/=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '/=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                match first.ty {
+                    TokenTypes::VARIABLE => {}
+                    _ => {
+                        eprintln!(
+                            "Error on line {}: No variable for operator '/=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                }
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "divide_assign".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_operator = true;
+            };
+
+            continue;
+        }
+
         if word.parse::<i32>().is_ok() && !in_string {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::INT,
-                    modifiers: if in_func || in_operator {
+                    modifiers: if in_func || in_operator || in_compare {
                         if in_operator {
                             in_operator = false;
                         }
@@ -421,7 +687,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::FLOAT,
-                    modifiers: if in_func || in_operator {
+                    modifiers: if in_func || in_operator || in_compare {
                         if in_operator {
                             in_operator = false;
                         }
@@ -452,7 +718,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 if !in_literal {
                     tokens.push(Token {
                         ty: TokenTypes::STRING,
-                        modifiers: if in_func {
+                        modifiers: if in_func || in_compare {
                             vec![TokenModifiers::ARGS]
                         } else {
                             vec![]
@@ -476,7 +742,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 if !in_literal {
                     tokens.push(Token {
                         ty: TokenTypes::STRING,
-                        modifiers: if in_func {
+                        modifiers: if in_func || in_compare {
                             vec![TokenModifiers::ARGS]
                         } else {
                             vec![]
@@ -502,7 +768,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 if !in_literal {
                     tokens.push(Token {
                         ty: TokenTypes::STRING,
-                        modifiers: if in_func {
+                        modifiers: if in_func || in_compare {
                             vec![TokenModifiers::ARGS]
                         } else {
                             vec![]
@@ -541,11 +807,11 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             continue;
         }
 
-        if !in_string && in_func {
+        if !in_string {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::NAME,
-                    modifiers: if in_func {
+                    modifiers: if in_func || in_compare {
                         vec![TokenModifiers::ARGS]
                     } else {
                         vec![]
