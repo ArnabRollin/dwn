@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2023-10-21
+
+### Added
+
+- Nested scopes
+- `break` statement
+- Scopes and if statements now return the value of the last statement.
+
 ## [0.7.0] - 2023-10-18
 
 ### Added
@@ -86,7 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.8.0...HEAD
+
+[0.8.0]: https://github.com/ArnabRollin/dwn/compare/v0.7.0...v0.8.0
 
 [0.7.0]: https://github.com/ArnabRollin/dwn/compare/v0.6.1...v0.7.0
 

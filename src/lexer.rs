@@ -75,6 +75,10 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     let functions = get_funcs();
     let variables = VARIABLES.read().unwrap();
 
+    if data.is_empty() {
+        return vec![];
+    }
+
     if *meta.in_scope {
         if data.starts_with('}') {
             *meta.in_scope = false;
@@ -102,7 +106,18 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             }
             return tokens;
         } else {
-            meta.scope_token.push_str(&data);
+            let data = match data.strip_prefix("\t") {
+                Some(l) => l,
+                None => {
+                    eprintln!("line {data}");
+                    eprintln!(
+                        "Error on line {}: Expected indent with tabs!",
+                        meta.line_count
+                    );
+                    exit(1);
+                }
+            };
+            meta.scope_token.push_str(data);
             meta.scope_token.push('\n');
             return vec![];
         }

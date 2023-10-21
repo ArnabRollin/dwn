@@ -38,7 +38,7 @@ pub fn idle() {
             }
         }
 
-        let code = code.trim();
+        let code = code.trim_end();
 
         if code.to_lowercase() == "quit" {
             break;

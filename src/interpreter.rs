@@ -29,7 +29,7 @@ pub fn interpret_file(file: Option<&String>) {
         let line = remove_all_after(line.unwrap(), ';');
 
         run(
-            line.trim().to_string(),
+            line.trim_end().to_string(),
             get_funcs(),
             &mut Metadata {
                 line_count: count,

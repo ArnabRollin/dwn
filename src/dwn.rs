@@ -109,6 +109,10 @@ lazy_static! {
             "divide_assign",
             divide_assign as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
+        m.insert(
+            "break",
+            break_ as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
 
         RwLock::new(m)
     };
@@ -226,16 +230,27 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
 ///     None => println!("It's fine..."),
 /// }
 /// ```
-fn run_scope(token: &Token, meta: &mut Metadata) -> Option<String> {
+fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
     match token.ty {
         TokenTypes::SCOPE => {
             *meta.scope += 1;
+            let mut ret = Token {
+                ty: TokenTypes::NONE,
+                modifiers: vec![],
+                val: "None".to_string(),
+            };
 
             for line in token.val.lines() {
-                if line.trim() == "break" {
-                    return Some(String::from("break"));
-                } else {
-                    run(line.to_string(), get_funcs(), meta);
+                ret = run(line.to_string(), get_funcs(), meta);
+
+                if (ret
+                    == Token {
+                        ty: TokenTypes::FUNC,
+                        modifiers: vec![],
+                        val: "break".to_string(),
+                    })
+                {
+                    return ret;
                 }
             }
 
@@ -253,7 +268,7 @@ fn run_scope(token: &Token, meta: &mut Metadata) -> Option<String> {
                 variables.remove(&k);
             }
 
-            return None;
+            return ret;
         }
         _ => {
             eprintln!("Error on line {}: Expected scope!", meta.line_count);
@@ -346,7 +361,7 @@ fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         Err(e) => {
             let e = e.to_string();
 
-            return Err(e);
+            return Err(format!("(ask) {e}"));
         }
     }
 
@@ -355,7 +370,7 @@ fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         Err(e) => {
             let e = e.to_string();
 
-            return Err(e);
+            return Err(format!("(ask) {e}"));
         }
     }
 
@@ -376,7 +391,7 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     }
 
     match args[0].ty {
-        TokenTypes::NONE => return Err(format!("Cannot accept none as variable name!")),
+        TokenTypes::NONE => return Err(format!("(let) Cannot accept none as variable name!")),
         _ => {}
     }
 
@@ -414,7 +429,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '+' with type {ty:?}"
+                "(+) Invalid type: Cannot use operation '+' with type {ty:?}"
             ))
         }
     };
@@ -422,7 +437,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '+' with type {ty:?}"
+                "(+) Invalid type: Cannot use operation '+' with type {ty:?}"
             ))
         }
     };
@@ -456,7 +471,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '-' with type {ty:?}"
+                "(-) Invalid type: Cannot use operation '-' with type {ty:?}"
             ))
         }
     };
@@ -464,7 +479,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '-' with type {ty:?}"
+                "(-) Invalid type: Cannot use operation '-' with type {ty:?}"
             ))
         }
     };
@@ -498,7 +513,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '*' with type {ty:?}"
+                "(*) Invalid type: Cannot use operation '*' with type {ty:?}"
             ))
         }
     };
@@ -506,7 +521,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '*' with type {ty:?}"
+                "(*) Invalid type: Cannot use operation '*' with type {ty:?}"
             ))
         }
     };
@@ -540,7 +555,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '/' with type {ty:?}"
+                "(/) Invalid type: Cannot use operation '/' with type {ty:?}"
             ))
         }
     };
@@ -548,7 +563,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '/' with type {ty:?}"
+                "(/) Invalid type: Cannot use operation '/' with type {ty:?}"
             ))
         }
     };
@@ -584,7 +599,13 @@ fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     loop {
         let stat = run_scope(&scope, meta);
 
-        if stat.is_some() {
+        if (stat
+            == Token {
+                ty: TokenTypes::FUNC,
+                modifiers: vec![],
+                val: "break".to_string(),
+            })
+        {
             break;
         }
     }
@@ -604,31 +625,23 @@ fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let scope = args[0].clone();
-    *meta.scope += 1;
+    let stat = run_scope(&scope, meta);
 
-    for line in scope.val.lines() {
-        run(line.to_string(), get_funcs(), meta);
+    if (stat
+        == Token {
+            ty: TokenTypes::FUNC,
+            modifiers: vec![],
+            val: "break".to_string(),
+        })
+    {
+        return Ok(Token {
+            ty: TokenTypes::NONE,
+            modifiers: vec![],
+            val: "None".to_string(),
+        });
     }
 
-    *meta.scope -= 1;
-    let mut drop_vars: Vec<String> = vec![];
-    let mut variables = VARIABLES.write().unwrap();
-
-    for (k, v) in variables.clone() {
-        if v.scope == *meta.scope + 1 {
-            drop_vars.push(k);
-        }
-    }
-
-    for k in drop_vars {
-        variables.remove(&k);
-    }
-
-    Ok(Token {
-        ty: TokenTypes::NONE,
-        modifiers: vec![],
-        val: "None".to_string(),
-    })
+    Ok(stat)
 }
 
 fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
@@ -642,7 +655,7 @@ fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 
     let result = match condition.ty {
         TokenTypes::BOOL => condition.val,
-        ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+        ty => return Err(format!("(if) Type {ty:?} cannot be used as condition!")),
     };
 
     if result == "false" {
@@ -653,32 +666,9 @@ fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         });
     }
 
-    let scope = args[1].clone();
-    *meta.scope += 1;
+    let ret = run_scope(&args[1], meta);
 
-    for line in scope.val.lines() {
-        run(line.to_string(), get_funcs(), meta);
-    }
-
-    *meta.scope -= 1;
-    let mut drop_vars: Vec<String> = vec![];
-    let mut variables = VARIABLES.write().unwrap();
-
-    for (k, v) in variables.clone() {
-        if v.scope == *meta.scope + 1 {
-            drop_vars.push(k);
-        }
-    }
-
-    for k in drop_vars {
-        variables.remove(&k);
-    }
-
-    Ok(Token {
-        ty: TokenTypes::NONE,
-        modifiers: vec![],
-        val: "None".to_string(),
-    })
+    Ok(ret)
 }
 
 fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
@@ -716,7 +706,7 @@ fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '>' with type {ty:?}"
+                "(>) Invalid type: Cannot use operation '>' with type {ty:?}"
             ))
         }
     };
@@ -724,7 +714,7 @@ fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '>' with type {ty:?}"
+                "(>) Invalid type: Cannot use operation '>' with type {ty:?}"
             ))
         }
     };
@@ -754,7 +744,7 @@ fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '<' with type {ty:?}"
+                "(<) Invalid type: Cannot use operation '<' with type {ty:?}"
             ))
         }
     };
@@ -762,7 +752,7 @@ fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '<' with type {ty:?}"
+                "(<) Invalid type: Cannot use operation '<' with type {ty:?}"
             ))
         }
     };
@@ -793,7 +783,7 @@ fn while_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         let condition = args[0].clone();
         let result = match condition.ty {
             TokenTypes::BOOL => condition.val,
-            ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+            ty => return Err(format!("(while) Type {ty:?} cannot be used as condition!")),
         };
 
         if result == "false" {
@@ -805,24 +795,20 @@ fn while_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
 
         let scope = args[1].clone();
-        *meta.scope += 1;
+        let stat = run_scope(&scope, meta);
 
-        for line in scope.val.lines() {
-            run(line.to_string(), get_funcs(), meta);
-        }
-
-        *meta.scope -= 1;
-        let mut drop_vars: Vec<String> = vec![];
-        let mut variables = VARIABLES.write().unwrap();
-
-        for (k, v) in variables.clone() {
-            if v.scope == *meta.scope + 1 {
-                drop_vars.push(k);
-            }
-        }
-
-        for k in drop_vars {
-            variables.remove(&k);
+        if (stat
+            == Token {
+                ty: TokenTypes::FUNC,
+                modifiers: vec![],
+                val: "break".to_string(),
+            })
+        {
+            return Ok(Token {
+                ty: TokenTypes::NONE,
+                modifiers: vec![],
+                val: "None".to_string(),
+            });
         }
     }
 }
@@ -838,7 +824,7 @@ fn until(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         let condition = args[0].clone();
         let result = match condition.ty {
             TokenTypes::BOOL => condition.val,
-            ty => return Err(format!("Type {ty:?} cannot be used as condition!")),
+            ty => return Err(format!("(until) Type {ty:?} cannot be used as condition!")),
         };
 
         if result == "true" {
@@ -850,24 +836,20 @@ fn until(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
 
         let scope = args[1].clone();
-        *meta.scope += 1;
+        let stat = run_scope(&scope, meta);
 
-        for line in scope.val.lines() {
-            run(line.to_string(), get_funcs(), meta);
-        }
-
-        *meta.scope -= 1;
-        let mut drop_vars: Vec<String> = vec![];
-        let mut variables = VARIABLES.write().unwrap();
-
-        for (k, v) in variables.clone() {
-            if v.scope == *meta.scope + 1 {
-                drop_vars.push(k);
-            }
-        }
-
-        for k in drop_vars {
-            variables.remove(&k);
+        if (stat
+            == Token {
+                ty: TokenTypes::FUNC,
+                modifiers: vec![],
+                val: "break".to_string(),
+            })
+        {
+            return Ok(Token {
+                ty: TokenTypes::NONE,
+                modifiers: vec![],
+                val: "None".to_string(),
+            });
         }
     }
 }
@@ -881,7 +863,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
         TokenTypes::VARIABLE => &tokens[0].val,
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '+=' with type {ty:?}"
+                "(+=) Invalid type: Cannot use operation '+=' with type {ty:?}"
             ))
         }
     };
@@ -889,7 +871,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
         TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot add thing of type {ty:?} to variable"
+                "(+=) Invalid type: Cannot add thing of type {ty:?} to variable"
             ))
         }
     };
@@ -900,7 +882,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
 
     let variable = match variable {
         Some(v) => v,
-        None => return Err(format!("Variable `{first}` not found")),
+        None => return Err(format!("(+=) Variable `{first}` not found")),
     };
 
     let value: f32 = match &variable.value.ty {
@@ -908,7 +890,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '+=' with variable of type {ty:?}"
+                "(+=) Invalid type: Cannot use operation '+=' with variable of type {ty:?}"
             ))
         }
     };
@@ -952,7 +934,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::VARIABLE => &tokens[0].val,
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '-=' with type {ty:?}"
+                "(-=) Invalid type: Cannot use operation '-=' with type {ty:?}"
             ))
         }
     };
@@ -960,7 +942,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot subtract thing of type {ty:?} from variable"
+                "(-=) Invalid type: Cannot subtract thing of type {ty:?} from variable"
             ))
         }
     };
@@ -971,7 +953,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
 
     let variable = match variable {
         Some(v) => v,
-        None => return Err(format!("Variable `{first}` not found")),
+        None => return Err(format!("(-=) Variable `{first}` not found")),
     };
 
     let value: f32 = match &variable.value.ty {
@@ -979,7 +961,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '-=' with variable of type {ty:?}"
+                "(-=) Invalid type: Cannot use operation '-=' with variable of type {ty:?}"
             ))
         }
     };
@@ -1024,7 +1006,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::VARIABLE => &tokens[0].val,
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '*=' with type {ty:?}"
+                "(*=) Invalid type: Cannot use operation '*=' with type {ty:?}"
             ))
         }
     };
@@ -1032,7 +1014,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot multiply thing of type {ty:?} with variable"
+                "(*=) Invalid type: Cannot multiply thing of type {ty:?} with variable"
             ))
         }
     };
@@ -1043,7 +1025,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
 
     let variable = match variable {
         Some(v) => v,
-        None => return Err(format!("Variable `{first}` not found")),
+        None => return Err(format!("(*=) Variable `{first}` not found")),
     };
 
     let value: f32 = match &variable.value.ty {
@@ -1051,7 +1033,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '*=' with variable of type {ty:?}"
+                "(*=) Invalid type: Cannot use operation '*=' with variable of type {ty:?}"
             ))
         }
     };
@@ -1096,7 +1078,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         TokenTypes::VARIABLE => &tokens[0].val,
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '/=' with type {ty:?}"
+                "(/=) Invalid type: Cannot use operation '/=' with type {ty:?}"
             ))
         }
     };
@@ -1104,7 +1086,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Variable cannot be divided by thing of type {ty:?}"
+                "(/=) Invalid type: Variable cannot be divided by thing of type {ty:?}"
             ))
         }
     };
@@ -1115,7 +1097,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
 
     let variable = match variable {
         Some(v) => v,
-        None => return Err(format!("Variable `{first}` not found")),
+        None => return Err(format!("(/=) Variable `{first}` not found")),
     };
 
     let value: f32 = match &variable.value.ty {
@@ -1123,7 +1105,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
             return Err(format!(
-                "Invalid type: Cannot use operation '/=' with variable of type {ty:?}"
+                "(/=) Invalid type: Cannot use operation '/=' with variable of type {ty:?}"
             ))
         }
     };
@@ -1156,5 +1138,13 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         ty: TokenTypes::NONE,
         modifiers: vec![],
         val: "None".to_string(),
+    });
+}
+
+fn break_(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    return Ok(Token {
+        ty: TokenTypes::FUNC,
+        modifiers: vec![],
+        val: "break".to_string(),
     });
 }
