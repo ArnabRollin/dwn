@@ -86,6 +86,10 @@ lazy_static! {
             eq as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
         m.insert(
+            "ne",
+            ne as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
             "gt",
             gt as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
@@ -112,6 +116,26 @@ lazy_static! {
         m.insert(
             "break",
             break_ as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "lazy_eq",
+            lazy_eq as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "lazy_ne",
+            lazy_ne as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "int",
+            int as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "float",
+            float as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "vars",
+            vars as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
 
         RwLock::new(m)
@@ -254,12 +278,11 @@ fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
                 }
             }
 
-            *meta.scope -= 1;
             let mut drop_vars: Vec<String> = vec![];
             let mut variables = VARIABLES.write().unwrap();
 
             for (k, v) in variables.clone() {
-                if v.scope == *meta.scope + 1 {
+                if v.scope == *meta.scope {
                     drop_vars.push(k);
                 }
             }
@@ -267,6 +290,8 @@ fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
             for k in drop_vars {
                 variables.remove(&k);
             }
+
+            *meta.scope -= 1;
 
             return ret;
         }
@@ -681,6 +706,56 @@ fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let first = &args[0];
     let second = &args[1];
 
+    if (first.ty == second.ty) && (first.val == second.val) {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "true".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "false".to_string(),
+    });
+}
+
+fn ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(!=) Not enough arguments!".to_string());
+    }
+
+    let first = &args[0];
+    let second = &args[1];
+
+    if (first.ty == second.ty) && (first.val == second.val) {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "false".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "true".to_string(),
+    });
+}
+
+fn lazy_eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(lazy=) Not enough arguments!".to_string());
+    }
+
+    let first = &args[0].val;
+    let second = &args[1].val;
+
     if first == second {
         return Ok(Token {
             ty: TokenTypes::BOOL,
@@ -695,6 +770,32 @@ fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         val: "false".to_string(),
     });
 }
+
+fn lazy_ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 2 {
+        return Err("(lazy!=) Not enough arguments!".to_string());
+    }
+
+    let first = &args[0].val;
+    let second = &args[1].val;
+
+    if first == second {
+        return Ok(Token {
+            ty: TokenTypes::BOOL,
+            modifiers: vec![],
+            val: "false".to_string(),
+        });
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::BOOL,
+        modifiers: vec![],
+        val: "true".to_string(),
+    });
+}
+
 fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
@@ -1146,5 +1247,50 @@ fn break_(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
         ty: TokenTypes::FUNC,
         modifiers: vec![],
         val: "break".to_string(),
+    });
+}
+
+fn int(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    let convertable = &args[0].val;
+    match convertable.parse::<i32>() {
+        Ok(int) => int,
+        Err(_) => return Err("(int) Could not convert value to integer".to_string()),
+    };
+
+    return Ok(Token {
+        ty: TokenTypes::INT,
+        modifiers: vec![],
+        val: convertable.to_string(),
+    });
+}
+fn float(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    let convertable = &args[0].val;
+    match convertable.parse::<f32>() {
+        Ok(int) => int,
+        Err(_) => return Err("(float) Could not convert value to float".to_string()),
+    };
+
+    return Ok(Token {
+        ty: TokenTypes::FLOAT,
+        modifiers: vec![],
+        val: convertable.to_string(),
+    });
+}
+
+fn vars(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
+    let variables = VARIABLES.read().unwrap();
+
+    for (k, v) in variables.iter() {
+        println!("{}: <{:?}>{}", k, v.value.ty, v.value.val);
+    }
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
     });
 }

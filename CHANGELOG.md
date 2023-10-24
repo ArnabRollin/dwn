@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2023-10-24
+
+### Added
+
+- `!=`, `lazy=` and `lazy!=` operators
+- `vars` function which prints all the variables
+- `int` and `float` converter functions
+- Guessing game example to `README.md`
+
+### Changed
+
+- Changed the example in `README.md`.
+
+### Fixed
+
+- Scope build-up bug has now been fixed
+
 ## [0.8.0] - 2023-10-21
 
 ### Added
@@ -94,7 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.8.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.9.0...HEAD
+
+[0.9.0]: https://github.com/ArnabRollin/dwn/compare/v0.8.0...v0.9.0
 
 [0.8.0]: https://github.com/ArnabRollin/dwn/compare/v0.7.0...v0.8.0
 

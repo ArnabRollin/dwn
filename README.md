@@ -2,31 +2,47 @@
 
 `dwn` is the interpreter for the Dawn programming language.
 
+## Installation options
+
+- [Go to book](https://arnabrollin.github.io/dwn-book)
+- [Latest Release](https://github.com/ArnabRollin/dwn/release/latest)
+- [Releases](https://arnabrollin.github.io/dwn/releases)
+
 ## Examples
 
-`code.dwn`
+### User Greeting
 
 ```dwn
-let username = (ask "What is your name? ") ; Asking the user their name...
+say "Hello!"
+let name = (ask "What is your name? ")
 
-say "Hello" username "!" ; Greet the user...
-
-let myname = "ExamplePerson"
-
-say "My name is" myname "."
-
-say "1 - 1 is" (1 - 1)
-say "The sum of 123 and 678 is" (sum 123 678)
-say "100 + 0.5 is" (100 + 0.5)
+say "Hello" name "!"
 ```
 
-```console
-% dwn run code.dwn
+### Guessing Game
 
-What is your name? ArnabRollin
-Hello ArnabRollin!
-My name is ExamplePerson.
-1 - 1 is 0 
-The sum of 123 and 678 is 801 
-100 + 0.5 is 100.5
+```dwn
+let n = 1256
+
+if (n == 1256) { ; test
+ say "Hello! Welcome to The Guesser"
+}
+
+forever {
+ let gs = (ask "Guess the number > ")
+ let g = (int gs)
+
+ if (g == n) {
+  say "Congratulations! The number was" n
+  break
+ }
+
+ if (g > n) {
+  say "Too big!"
+ }
+
+ if (g < n) {
+  say "Too small!"
+ }
+}
 ```

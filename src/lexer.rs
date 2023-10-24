@@ -109,7 +109,6 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             let data = match data.strip_prefix("\t") {
                 Some(l) => l,
                 None => {
-                    eprintln!("line {data}");
                     eprintln!(
                         "Error on line {}: Expected indent with tabs!",
                         meta.line_count
@@ -274,6 +273,100 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
             continue;
         }
+        if word == "!=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator '!=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "ne".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_compare = true;
+            };
+
+            continue;
+        }
+        if word == "lazy=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator 'lazy=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "lazy_eq".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_compare = true;
+            };
+
+            continue;
+        }
+        if word == "lazy!=" && !in_string {
+            if !in_literal {
+                let first = tokens.pop();
+
+                let first = match first {
+                    Some(token) => token,
+                    None => {
+                        eprintln!(
+                            "Error on line {}: No first value for comparison operator 'lazy!=' !",
+                            meta.line_count
+                        );
+                        exit(1);
+                    }
+                };
+
+                tokens.push(Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "lazy_ne".to_string(),
+                });
+
+                tokens.push(Token {
+                    modifiers: vec![TokenModifiers::ARGS],
+                    ..first
+                });
+
+                in_compare = true;
+            };
+
+            continue;
+        }
+
         if word == ">" && !in_string {
             if !in_literal {
                 let first = tokens.pop();
@@ -719,7 +812,6 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
         }
 
         if word == "{" && !in_string {
-            *meta.scope += 1;
             *meta.in_scope = true;
 
             *meta.current_tokens = tokens.clone();
