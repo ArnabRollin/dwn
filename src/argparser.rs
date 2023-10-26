@@ -1,6 +1,6 @@
 //! Argument parser for Dawn (dwn).
 
-use std::env::Args;
+use std::{collections::HashMap, env::Args};
 
 /// Parses the arguments.
 ///
@@ -24,14 +24,24 @@ pub fn argparse(mut args: Args) -> Arguments {
     let mut options: Vec<String> = vec![];
     let mut flags: Vec<String> = vec![];
     let mut arguments: Vec<String> = vec![];
+    let mut variables: HashMap<String, String> = HashMap::new();
 
     while let Some(arg) = args.next() {
         if arg.starts_with("--") {
-            options.extend(
-                arg.trim_start_matches("--")
-                    .split('-')
-                    .map(|s| s.to_string()),
-            );
+            let varsplit: Vec<&str> = arg.split('=').collect();
+
+            if varsplit[..varsplit.len() - 1].is_empty() {
+                options.extend(
+                    arg.trim_start_matches("--")
+                        .split('-')
+                        .map(|s| s.to_string()),
+                );
+            } else {
+                variables.insert(
+                    varsplit[0].trim_start_matches("--").to_string(),
+                    varsplit[1].to_string(),
+                );
+            }
         } else if arg.starts_with("-") {
             flags.extend(arg.chars().skip(1).map(|c| c.to_string()));
         } else {
@@ -50,6 +60,7 @@ pub fn argparse(mut args: Args) -> Arguments {
         flags,
         command,
         arguments,
+        variables,
     }
 }
 
@@ -62,6 +73,7 @@ pub fn argparse(mut args: Args) -> Arguments {
 ///     flags: vec![String::from("f")],
 ///     command: String::from("lawn"),
 ///     arguments: vec![String::from("dig")],
+///     variables: vec![],
 /// }
 /// ```
 pub struct Arguments {
@@ -69,6 +81,7 @@ pub struct Arguments {
     pub flags: Vec<String>,
     pub command: String,
     pub arguments: Vec<String>,
+    pub variables: HashMap<String, String>,
 }
 
 #[test]
@@ -77,16 +90,26 @@ fn argument_parser() {
         let mut options: Vec<String> = vec![];
         let mut flags: Vec<String> = vec![];
         let mut arguments: Vec<String> = vec![];
+        let mut variables: HashMap<String, String> = HashMap::new();
 
         let mut args = args.iter();
 
         while let Some(arg) = args.next() {
             if arg.starts_with("--") {
-                options.extend(
-                    arg.trim_start_matches("--")
-                        .split('-')
-                        .map(|s| s.to_string()),
-                );
+                let varsplit: Vec<&str> = arg.split('=').collect();
+
+                if varsplit.is_empty() {
+                    options.extend(
+                        arg.trim_start_matches("--")
+                            .split('-')
+                            .map(|s| s.to_string()),
+                    );
+                } else {
+                    variables.insert(
+                        varsplit[0].trim_start_matches("--").to_string(),
+                        varsplit[1].to_string(),
+                    );
+                }
             } else if arg.starts_with("-") {
                 flags.extend(arg.chars().skip(1).map(|c| c.to_string()));
             } else {
@@ -105,6 +128,7 @@ fn argument_parser() {
             flags,
             command,
             arguments,
+            variables,
         }
     }
     let args = argparse(vec![
@@ -112,7 +136,11 @@ fn argument_parser() {
         "--c-c-c".to_string(),
         "-dd".to_string(),
         "cey".to_string(),
+        "--level=1".to_string(),
     ]);
+
+    let mut variables_assert = HashMap::new();
+    variables_assert.insert("level".to_string(), "1".to_string());
 
     assert_eq!(args.command, "klein".to_string());
     assert_eq!(args.arguments, vec!["cey".to_string()]);
@@ -121,4 +149,5 @@ fn argument_parser() {
         vec!["c".to_string(), "c".to_string(), "c".to_string()]
     );
     assert_eq!(args.flags, vec!["d".to_string(), "d".to_string()]);
+    assert_eq!(args.variables, variables_assert);
 }

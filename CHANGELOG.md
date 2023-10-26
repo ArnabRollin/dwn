@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2023-10-26
+
+### Added
+
+- Variable-options in CLI
+- Bytecode compiler and runner (level 1)
+- Better documentation in CLI.
+
+### Changed
+
+- Now there are two runner functions: `run_tokens` and `run` (which tokenizes the line and calls `run_tokens` with the tokens)
+- Integers are now `i64` and floats are `f64`
+
 ## [0.9.0] - 2023-10-24
 
 ### Added
@@ -111,7 +124,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.9.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.10.0...HEAD
+
+[0.10.0]: https://github.com/ArnabRollin/dwn/compare/v0.9.0...v0.10.0
 
 [0.9.0]: https://github.com/ArnabRollin/dwn/compare/v0.8.0...v0.9.0
 

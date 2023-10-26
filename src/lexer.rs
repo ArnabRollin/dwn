@@ -771,7 +771,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             continue;
         }
 
-        if word.parse::<i32>().is_ok() && !in_string {
+        if word.parse::<i64>().is_ok() && !in_string {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::INT,
@@ -791,7 +791,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             continue;
         }
 
-        if word.parse::<f32>().is_ok() && !in_string {
+        if word.parse::<f64>().is_ok() && !in_string {
             if !in_literal {
                 tokens.push(Token {
                     ty: TokenTypes::FLOAT,
@@ -816,7 +816,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
             *meta.current_tokens = tokens.clone();
 
-            continue;
+            return vec![];
         }
 
         if word.starts_with('"') {
