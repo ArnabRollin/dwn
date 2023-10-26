@@ -29,8 +29,23 @@ pub fn run(
     >,
     meta: &mut Metadata,
 ) -> Token {
-    let functions_ = functions.clone();
     let tokens = tokenize(line, meta);
+
+    run_tokens(tokens, functions, meta)
+}
+
+pub fn run_tokens(
+    tokens: Vec<Token>,
+    functions: RwLockReadGuard<
+        '_,
+        std::collections::HashMap<
+            &str,
+            for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        >,
+    >,
+    meta: &mut Metadata,
+) -> Token {
+    let functions_ = functions.clone();
 
     if tokens.len() > 0 {
         match tokens[0].ty.clone() {

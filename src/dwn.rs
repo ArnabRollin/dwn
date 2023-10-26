@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Variable {
-    value: Token,
+    pub value: Token,
     pub scope: u32,
 }
 
@@ -451,7 +451,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(+) Invalid type: Cannot use operation '+' with type {ty:?}"
@@ -459,7 +459,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(+) Invalid type: Cannot use operation '+' with type {ty:?}"
@@ -470,7 +470,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let total = first + second;
 
     if total.fract() == 0.0 {
-        let total = total as i32;
+        let total = total as i64;
 
         return Ok(Token {
             ty: TokenTypes::INT,
@@ -493,7 +493,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(-) Invalid type: Cannot use operation '-' with type {ty:?}"
@@ -501,7 +501,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(-) Invalid type: Cannot use operation '-' with type {ty:?}"
@@ -512,7 +512,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     let difference = first - second;
 
     if difference.fract() == 0.0 {
-        let difference = difference as i32;
+        let difference = difference as i64;
 
         return Ok(Token {
             ty: TokenTypes::INT,
@@ -535,7 +535,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(*) Invalid type: Cannot use operation '*' with type {ty:?}"
@@ -543,7 +543,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(*) Invalid type: Cannot use operation '*' with type {ty:?}"
@@ -554,7 +554,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let product = first * second;
 
     if product.fract() == 0.0 {
-        let product = product as i32;
+        let product = product as i64;
 
         return Ok(Token {
             ty: TokenTypes::INT,
@@ -577,7 +577,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(/) Invalid type: Cannot use operation '/' with type {ty:?}"
@@ -585,7 +585,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(/) Invalid type: Cannot use operation '/' with type {ty:?}"
@@ -596,7 +596,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let quotient = first / second;
 
     if quotient.fract() == 0.0 {
-        let quotient = quotient as i32;
+        let quotient = quotient as i64;
 
         return Ok(Token {
             ty: TokenTypes::INT,
@@ -804,7 +804,7 @@ fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(>) Invalid type: Cannot use operation '>' with type {ty:?}"
@@ -812,7 +812,7 @@ fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(>) Invalid type: Cannot use operation '>' with type {ty:?}"
@@ -842,7 +842,7 @@ fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 
     let first = match args[0].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[0].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(<) Invalid type: Cannot use operation '<' with type {ty:?}"
@@ -850,7 +850,7 @@ fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
         }
     };
     let second = match args[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => args[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(<) Invalid type: Cannot use operation '<' with type {ty:?}"
@@ -969,7 +969,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
         }
     };
     let second = match tokens[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(+=) Invalid type: Cannot add thing of type {ty:?} to variable"
@@ -986,7 +986,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
         None => return Err(format!("(+=) Variable `{first}` not found")),
     };
 
-    let value: f32 = match &variable.value.ty {
+    let value: f64 = match &variable.value.ty {
         TokenTypes::INT => variable.value.val.parse().unwrap(),
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
@@ -999,7 +999,7 @@ fn add_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String>
     let total = value + second;
 
     if total.fract() == 0.0 {
-        let total = total as i32;
+        let total = total as i64;
 
         *variable = Variable {
             value: Token {
@@ -1040,7 +1040,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         }
     };
     let second = match tokens[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(-=) Invalid type: Cannot subtract thing of type {ty:?} from variable"
@@ -1057,7 +1057,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         None => return Err(format!("(-=) Variable `{first}` not found")),
     };
 
-    let value: f32 = match &variable.value.ty {
+    let value: f64 = match &variable.value.ty {
         TokenTypes::INT => variable.value.val.parse().unwrap(),
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
@@ -1070,7 +1070,7 @@ fn subtract_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
     let total = value - second;
 
     if total.fract() == 0.0 {
-        let total = total as i32;
+        let total = total as i64;
 
         *variable = Variable {
             value: Token {
@@ -1112,7 +1112,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         }
     };
     let second = match tokens[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(*=) Invalid type: Cannot multiply thing of type {ty:?} with variable"
@@ -1129,7 +1129,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
         None => return Err(format!("(*=) Variable `{first}` not found")),
     };
 
-    let value: f32 = match &variable.value.ty {
+    let value: f64 = match &variable.value.ty {
         TokenTypes::INT => variable.value.val.parse().unwrap(),
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
@@ -1142,7 +1142,7 @@ fn multiply_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, St
     let total = value * second;
 
     if total.fract() == 0.0 {
-        let total = total as i32;
+        let total = total as i64;
 
         *variable = Variable {
             value: Token {
@@ -1184,7 +1184,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         }
     };
     let second = match tokens[1].ty.clone() {
-        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f32>().unwrap(),
+        TokenTypes::INT | TokenTypes::FLOAT => tokens[1].val.parse::<f64>().unwrap(),
         ty => {
             return Err(format!(
                 "(/=) Invalid type: Variable cannot be divided by thing of type {ty:?}"
@@ -1201,7 +1201,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
         None => return Err(format!("(/=) Variable `{first}` not found")),
     };
 
-    let value: f32 = match &variable.value.ty {
+    let value: f64 = match &variable.value.ty {
         TokenTypes::INT => variable.value.val.parse().unwrap(),
         TokenTypes::FLOAT => variable.value.val.parse().unwrap(),
         ty => {
@@ -1214,7 +1214,7 @@ fn divide_assign(tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, Stri
     let total = value / second;
 
     if total.fract() == 0.0 {
-        let total = total as i32;
+        let total = total as i64;
 
         *variable = Variable {
             value: Token {
@@ -1254,7 +1254,7 @@ fn int(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     let convertable = &args[0].val;
-    match convertable.parse::<i32>() {
+    match convertable.parse::<i64>() {
         Ok(int) => int,
         Err(_) => return Err("(int) Could not convert value to integer".to_string()),
     };
@@ -1269,7 +1269,7 @@ fn float(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     let convertable = &args[0].val;
-    match convertable.parse::<f32>() {
+    match convertable.parse::<f64>() {
         Ok(int) => int,
         Err(_) => return Err("(float) Could not convert value to float".to_string()),
     };
