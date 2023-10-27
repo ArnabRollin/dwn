@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2023-10-27
+
+### Added
+
+- Arrays
+- Array pretty-print function (`format_array`)
+
+### Changed
+
+- Literals now return the value provided (if there is no function or operator involved) instead of `None`.
+
+### Removed
+
+- Unnecessary `match` in `say` and `short_say` functions.
+
 ## [0.10.0] - 2023-10-26
 
 ### Added
@@ -124,7 +139,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.10.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.11.0...HEAD
+
+[0.11.0]: https://github.com/ArnabRollin/dwn/compare/v0.10.0...v0.11.0
 
 [0.10.0]: https://github.com/ArnabRollin/dwn/compare/v0.9.0...v0.10.0
 

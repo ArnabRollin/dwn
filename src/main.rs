@@ -46,7 +46,7 @@ fn main() {
     if arguments.options.contains(&"version".to_string())
         || arguments.flags.contains(&"v".to_string())
     {
-        println!("0.10.0");
+        println!("0.11.0");
         exit(0);
     }
 

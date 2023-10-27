@@ -22,6 +22,7 @@ lazy_static! {
         m.insert("sc", TokenTypes::SCOPE);
         m.insert("st", TokenTypes::STRING);
         m.insert("v", TokenTypes::VARIABLE);
+        m.insert("a", TokenTypes::ARRAY);
         m
     };
 }

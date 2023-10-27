@@ -17,6 +17,7 @@ pub enum TokenTypes {
     SCOPE,
     NONE,
     BOOL,
+    ARRAY,
 }
 
 /// The token modifiers.
@@ -72,6 +73,9 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     let mut literal = String::new();
     let mut in_literal = false;
 
+    let mut array = String::new();
+    let mut in_array = false;
+
     let functions = get_funcs();
     let variables = VARIABLES.read().unwrap();
 
@@ -123,11 +127,18 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
     }
 
     for raw_word in data.split(' ') {
-        let word = if raw_word.starts_with('(') && !in_string {
+        let word1 = if raw_word.starts_with('(') && !in_string {
             in_literal = true;
             &raw_word[1..]
         } else {
             raw_word
+        };
+
+        let word = if word1.starts_with('[') && !in_string {
+            in_array = true;
+            &word1[1..]
+        } else {
+            word1
         };
 
         if in_literal {
@@ -162,6 +173,48 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 continue;
             } else {
                 literal.push_str(word);
+                continue;
+            }
+        }
+
+        if in_array {
+            if word1.ends_with(']') {
+                if in_string {
+                    if word1.strip_suffix(']').unwrap().ends_with('"') {
+                        in_string = false;
+                    }
+                }
+            }
+
+            if !word1.starts_with('[') {
+                array.push(' ');
+            }
+
+            if word1.ends_with(']') && !in_string {
+                in_array = false;
+                array.push_str(&word[..word.len() - 1]);
+
+                tokens.push(Token {
+                    ty: TokenTypes::ARRAY,
+                    modifiers: if in_func || in_compare {
+                        vec![TokenModifiers::ARGS]
+                    } else {
+                        vec![]
+                    },
+                    val: array.clone(),
+                });
+
+                array.clear();
+
+                continue;
+            } else {
+                if word.ends_with(',') {
+                    array.push_str(&word[..word.len() - 1]);
+                    array.push('\x05');
+                } else {
+                    array.push_str(word);
+                }
+
                 continue;
             }
         }

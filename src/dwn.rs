@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    lexer::{Token, TokenModifiers, TokenTypes},
+    lexer::{tokenize, Token, TokenModifiers, TokenTypes},
     runner::run,
 };
 
@@ -136,6 +136,10 @@ lazy_static! {
         m.insert(
             "vars",
             vars as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "format_array",
+            format_array as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
 
         RwLock::new(m)
@@ -302,6 +306,24 @@ fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
     }
 }
 
+fn read_array(token: &Token, meta: &mut Metadata) -> Vec<Token> {
+    let mut array: Vec<Token> = vec![];
+
+    let array_items: Vec<&str> = token.val.split('\x05').collect();
+
+    for array_item in array_items {
+        let tokens = tokenize(array_item.to_string(), meta);
+
+        for token in tokens {
+            if !token.val.is_empty() {
+                array.push(token);
+            }
+        }
+    }
+
+    array
+}
+
 /// Gets the functions HashMap
 ///
 /// Examples:
@@ -339,9 +361,7 @@ fn say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     for arg in args {
-        match arg.ty {
-            _ => print!("{} ", arg.val),
-        };
+        print!("{} ", arg.val);
     }
 
     println!();
@@ -357,9 +377,7 @@ fn short_say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     let args = get_args(tokens, meta);
 
     for arg in args {
-        match arg.ty {
-            _ => print!("{} ", arg.val),
-        };
+        print!("{} ", arg.val);
     }
 
     Ok(Token {
@@ -1293,4 +1311,25 @@ fn vars(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
         modifiers: vec![],
         val: "None".to_string(),
     });
+}
+
+fn format_array(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    if args.len() < 1 {
+        return Err("(format_array) Not enough arguments!".to_string());
+    }
+
+    let array = read_array(&args[0], meta);
+    println!("{:?}", array);
+
+    for token in array {
+        println!("{}", token.val);
+    }
+
+    Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    })
 }

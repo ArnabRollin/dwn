@@ -87,11 +87,11 @@ pub fn run_tokens(
                     }
                 }
             }
-            _ => {
+            ty => {
                 return Token {
-                    ty: TokenTypes::NONE,
+                    ty,
                     modifiers: vec![],
-                    val: "None".to_string(),
+                    val: tokens[0].val.to_string(),
                 }
             }
         }
