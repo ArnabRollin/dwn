@@ -98,7 +98,7 @@ fn argument_parser() {
             if arg.starts_with("--") {
                 let varsplit: Vec<&str> = arg.split('=').collect();
 
-                if varsplit.is_empty() {
+                if varsplit[..varsplit.len() - 1].is_empty() {
                     options.extend(
                         arg.trim_start_matches("--")
                             .split('-')
