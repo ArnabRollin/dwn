@@ -103,7 +103,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 _ => {
                     eprintln!(
                         "Error on line {}: No function found to run scope!",
-                        meta.line_count
+                        meta.line_count + 1
                     );
                     exit(1);
                 }
@@ -115,7 +115,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 None => {
                     eprintln!(
                         "Error on line {}: Expected indent with tabs!",
-                        meta.line_count
+                        meta.line_count + 1
                     );
                     exit(1);
                 }
@@ -190,31 +190,34 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                 array.push(' ');
             }
 
-            if word1.ends_with(']') && !in_string {
-                in_array = false;
-                array.push_str(&word[..word.len() - 1]);
+            if !in_string {
+                if word1.ends_with(']') {
+                    in_array = false;
+                    array.push_str(&word[..word.len() - 1]);
 
-                tokens.push(Token {
-                    ty: TokenTypes::ARRAY,
-                    modifiers: if in_func || in_compare {
-                        vec![TokenModifiers::ARGS]
-                    } else {
-                        vec![]
-                    },
-                    val: array.clone(),
-                });
+                    tokens.push(Token {
+                        ty: TokenTypes::ARRAY,
+                        modifiers: if in_func || in_compare {
+                            vec![TokenModifiers::ARGS]
+                        } else {
+                            vec![]
+                        },
+                        val: array.clone(),
+                    });
 
-                array.clear();
+                    array.clear();
 
-                continue;
-            } else {
-                if word.ends_with(',') {
+                    continue;
+                } else if word.ends_with(',') && !in_string && !word.starts_with('"') {
                     array.push_str(&word[..word.len() - 1]);
                     array.push('\x05');
                 } else {
                     array.push_str(word);
                 }
 
+                continue;
+            } else {
+                array.push_str(word);
                 continue;
             }
         }
@@ -295,6 +298,105 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
             continue;
         }
 
+        let index_split: Vec<&str> = word.split('[').collect();
+
+        if index_split.len() == 2 {
+            let variable_get = variables.get(index_split[0]);
+            if variable_get.is_some() {
+                let index = index_split[1];
+                let index = &index[..index.len() - 1];
+
+                let index: usize = match index.parse() {
+                    Ok(idx) => idx,
+                    Err(_) => {
+                        eprintln!(
+                            "Error on line {}: Variables can only be indexed by natural numbers",
+                            meta.line_count + 1
+                        );
+                        exit(1);
+                    }
+                };
+
+                let variable = variable_get.unwrap();
+
+                match &variable.value.ty {
+                    TokenTypes::ARRAY => {
+                        let items: Vec<&str> = variable
+                            .value
+                            .val
+                            .split('\x05')
+                            .map(|i| i.trim())
+                            .filter(|&i| !i.is_empty())
+                            .collect();
+
+                        let item = items.get(index);
+
+                        let item = match item {
+                            Some(&item) => item,
+                            None => {
+                                eprintln!(
+                                    "Error on line {}: Indexing overload on array",
+                                    meta.line_count + 1
+                                );
+                                exit(1);
+                            }
+                        };
+
+                        let tokens_: Vec<Token> = tokenize(item.to_string(), meta)
+                            .iter()
+                            .map(|t| Token {
+                                ty: t.ty.clone(),
+                                modifiers: if in_func || in_compare {
+                                    vec![TokenModifiers::ARGS]
+                                } else {
+                                    vec![]
+                                },
+                                val: t.val.to_string(),
+                            })
+                            .collect();
+
+                        tokens.extend(tokens_);
+                        continue;
+                    }
+                    TokenTypes::STRING => {
+                        let val = &variable.value.val;
+
+                        let subs = val.chars().nth(index);
+
+                        let substring = match subs {
+                            Some(s) => s,
+                            None => {
+                                eprintln!(
+                                    "Error on line {}: Indexing overload on string",
+                                    meta.line_count + 1
+                                );
+                                exit(1);
+                            }
+                        };
+
+                        tokens.push(Token {
+                            ty: TokenTypes::STRING,
+                            modifiers: if in_func || in_compare {
+                                vec![TokenModifiers::ARGS]
+                            } else {
+                                vec![]
+                            },
+                            val: substring.to_string(),
+                        });
+
+                        continue;
+                    }
+                    ty => {
+                        eprintln!(
+                            "Error on line {}: Cannot index type {ty:?}",
+                            meta.line_count + 1
+                        );
+                        exit(1);
+                    }
+                }
+            }
+        }
+
         if word == "==" && !in_string {
             if !in_literal {
                 let first = tokens.pop();
@@ -304,7 +406,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator '==' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -335,7 +437,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator '!=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -366,7 +468,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator 'lazy=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -397,7 +499,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator 'lazy!=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -429,7 +531,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator '>' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -460,7 +562,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first value for comparison operator '<' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -492,7 +594,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first number for operator '+' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -503,7 +605,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No first number for operator '+' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -534,7 +636,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first number for operator '-' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -545,7 +647,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No first number for operator '-' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -576,7 +678,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first number for operator '*' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -587,7 +689,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No first number for operator '*' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -618,7 +720,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No first number for operator '/' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -629,7 +731,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No first number for operator '/' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -661,7 +763,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No variable for operator '+=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -672,7 +774,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No variable for operator '+=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -704,7 +806,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No variable for operator '-=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -715,7 +817,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No variable for operator '-=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -747,7 +849,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No variable for operator '*=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -758,7 +860,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No variable for operator '*=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -790,7 +892,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     None => {
                         eprintln!(
                             "Error on line {}: No variable for operator '/=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }
@@ -801,7 +903,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
                     _ => {
                         eprintln!(
                             "Error on line {}: No variable for operator '/=' !",
-                            meta.line_count
+                            meta.line_count + 1
                         );
                         exit(1);
                     }

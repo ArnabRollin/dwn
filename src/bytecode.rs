@@ -304,7 +304,9 @@ fn byterun_lvl1(mut reader: BufReader<File>) {
                 scope_token: &mut scope_token,
                 current_tokens: &mut current_tokens,
             },
-        );
+            false,
+        )
+        .ok();
     }
 }
 

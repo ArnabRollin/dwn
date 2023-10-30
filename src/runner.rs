@@ -31,7 +31,7 @@ pub fn run(
 ) -> Token {
     let tokens = tokenize(line, meta);
 
-    run_tokens(tokens, functions, meta)
+    run_tokens(tokens, functions, meta, false).unwrap()
 }
 
 pub fn run_tokens(
@@ -44,13 +44,15 @@ pub fn run_tokens(
         >,
     >,
     meta: &mut Metadata,
-) -> Token {
+    capture_errors: bool,
+) -> Result<Token, String> {
     let functions_ = functions.clone();
 
     if tokens.len() > 0 {
         match tokens[0].ty.clone() {
             TokenTypes::FUNC => {
-                let f = functions_.get(tokens[0].val.as_str());
+                let fname = tokens[0].val.as_str();
+                let f = functions_.get(fname);
 
                 match f {
                     Some(f) => {
@@ -66,41 +68,54 @@ pub fn run_tokens(
                         let ret = if !*meta.in_scope {
                             f(args, meta)
                         } else {
-                            return Token {
+                            return Ok(Token {
                                 ty: TokenTypes::NONE,
                                 modifiers: vec![],
                                 val: "None".to_string(),
-                            };
+                            });
                         };
 
                         match ret {
-                            Ok(token) => return token,
+                            Ok(token) => return Ok(token),
                             Err(err) => {
-                                eprintln!("\nError on line {}: {}", meta.line_count + 1, err);
+                                if capture_errors {
+                                    return Err(format!(
+                                        "Error on line {}: {}",
+                                        meta.line_count + 1,
+                                        err
+                                    ));
+                                }
+                                eprintln!("Error on line {}: {}", meta.line_count + 1, err);
                                 exit(1);
                             }
                         }
                     }
                     None => {
+                        if capture_errors {
+                            return Err(format!(
+                                "Error: Function {} does not exist!",
+                                tokens[0].val
+                            ));
+                        }
                         eprintln!("Error: Function {} does not exist!", tokens[0].val);
                         exit(1);
                     }
                 }
             }
             ty => {
-                return Token {
+                return Ok(Token {
                     ty,
                     modifiers: vec![],
                     val: tokens[0].val.to_string(),
-                }
+                })
             }
         }
     } else {
-        return Token {
+        return Ok(Token {
             ty: TokenTypes::NONE,
             modifiers: vec![],
             val: "None".to_string(),
-        };
+        });
     }
 }
 

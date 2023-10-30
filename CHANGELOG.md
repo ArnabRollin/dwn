@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2023-10-30
+
+### Added
+
+- Slicing of arrays and strings (store in variable first).
+- `quit` and `exit` functions to immediately terminate the program with an optional code.
+
+### Changed
+
+- `run_tokens` now returns a `Result` to provide a base for the upcoming feature of error handling.
+
+### Fixed
+
+- Fixed bug where commas in in strings were evaluated as seperators.
+- Errors in lexer now print on the correct line.
+
 ## [0.11.0] - 2023-10-27
 
 ### Added
@@ -139,7 +155,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.11.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.12.0...HEAD
+
+[0.12.0]: https://github.com/ArnabRollin/dwn/compare/v0.11.0...v0.12.0
 
 [0.11.0]: https://github.com/ArnabRollin/dwn/compare/v0.10.0...v0.11.0
 

@@ -141,7 +141,14 @@ lazy_static! {
             "format_array",
             format_array as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
-
+        m.insert(
+            "quit",
+            quit as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
+        m.insert(
+            "exit",
+            quit as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
         RwLock::new(m)
     };
 }
@@ -300,7 +307,7 @@ fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
             return ret;
         }
         _ => {
-            eprintln!("Error on line {}: Expected scope!", meta.line_count);
+            eprintln!("Error on line {}: Expected scope!", meta.line_count + 1);
             exit(1);
         }
     }
@@ -1332,4 +1339,21 @@ fn format_array(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String
         modifiers: vec![],
         val: "None".to_string(),
     })
+}
+
+fn quit(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta);
+
+    let code: i32 = if args.len() > 0 {
+        match args[0].val.parse() {
+            Ok(n) => n,
+            Err(_) => {
+                return Err("(quit / exit) Error code is not a number".to_string());
+            }
+        }
+    } else {
+        0
+    };
+
+    exit(code);
 }
