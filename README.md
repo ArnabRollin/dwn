@@ -1,6 +1,6 @@
 # dwn
 
-`dwn` is the interpreter for the Dawn programming language.
+Dawn (`dwn`) is the interpreter and bytecode compiler for the Dawn Programming Language.
 
 ## Installation options
 
