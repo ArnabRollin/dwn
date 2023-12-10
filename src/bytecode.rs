@@ -5,7 +5,7 @@ use std::fs::{write, File};
 use std::io::{BufRead, BufReader, Read};
 use std::process::exit;
 
-use crate::dwn::{get_funcs, Metadata, Variable, VARIABLES};
+use crate::dwn::{get_funcs, Metadata, Variable, CUSTOM_FUNCS, VARIABLES};
 use crate::lexer::{tokenize, Token, TokenModifiers, TokenTypes};
 use crate::runner::run_tokens;
 
@@ -23,6 +23,7 @@ lazy_static! {
         m.insert("st", TokenTypes::STRING);
         m.insert("v", TokenTypes::VARIABLE);
         m.insert("a", TokenTypes::ARRAY);
+        m.insert("cf", TokenTypes::CUSTOMFUNC);
         m
     };
 }
@@ -111,6 +112,20 @@ fn bytec_lvl1(reader: BufReader<File>, file: &String) {
                     value: tokens[2].clone(),
                 },
             );
+        }
+
+        if (tokens.len() > 0
+            && tokens[0]
+                == Token {
+                    ty: TokenTypes::FUNC,
+                    modifiers: vec![],
+                    val: "func".to_string(),
+                })
+        {
+            CUSTOM_FUNCS
+                .write()
+                .unwrap()
+                .insert(tokens[1].val.to_string(), tokens[2].clone());
         }
 
         for token in tokens {

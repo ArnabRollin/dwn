@@ -2,13 +2,14 @@
 
 use std::process::exit;
 
-use crate::dwn::{get_funcs, Metadata, VARIABLES};
+use crate::dwn::{get_funcs, Metadata, CUSTOM_FUNCS, VARIABLES};
 
 /// The token types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenTypes {
     VARIABLE,
     FUNC,
+    CUSTOMFUNC,
     STRING,
     LITERAL,
     INT,
@@ -78,6 +79,7 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
     let functions = get_funcs();
     let variables = VARIABLES.read().unwrap();
+    let custom_funcs = CUSTOM_FUNCS.read().unwrap();
 
     if data.is_empty() {
         return vec![];
@@ -1041,6 +1043,20 @@ pub fn tokenize(data: String, meta: &mut Metadata) -> Vec<Token> {
 
                 string_token.clear();
             }
+
+            continue;
+        }
+
+        if custom_funcs.contains_key(word) {
+            if !in_literal {
+                tokens.push(Token {
+                    ty: TokenTypes::CUSTOMFUNC,
+                    modifiers: vec![],
+                    val: word.to_string(),
+                });
+            }
+
+            in_func = true;
 
             continue;
         }

@@ -149,6 +149,10 @@ lazy_static! {
             "exit",
             quit as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
         );
+        m.insert(
+            "func",
+            func as for<'a> fn(Vec<Token>, &'a mut Metadata) -> Result<Token, String>,
+        );
         RwLock::new(m)
     };
 }
@@ -173,6 +177,22 @@ lazy_static! {
     };
 }
 
+lazy_static! {
+    /// The custom functions HashMap
+    ///
+    /// Examples:
+    ///
+    /// ```rust
+    /// let variables = CUSTOM_FUNCS.read().unwrap();
+    /// assert!(variables.contains_key(&"some"))
+    /// ```
+    pub static ref CUSTOM_FUNCS: RwLock<HashMap<String, Token>> = {
+        let m = HashMap::new();
+
+        RwLock::new(m)
+    };
+}
+
 /// Get all arguments for functions
 ///
 /// Examples:
@@ -190,7 +210,7 @@ lazy_static! {
 ///           val: "b"  
 ///     }
 /// ];
-/// let args = get_args(tokens, meta);
+/// let args = get_args(tokens, meta, false);
 ///
 /// assert_eq!(
 ///     args,
@@ -203,7 +223,7 @@ lazy_static! {
 ///     ]
 /// );
 /// ```
-fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
+fn get_args(tokens: Vec<Token>, meta: &mut Metadata, tolerate_names: bool) -> Vec<Token> {
     let mut args: Vec<Token> = vec![];
 
     for token in tokens {
@@ -238,12 +258,15 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
                 }
             }
             TokenTypes::NAME => {
-                eprintln!(
-                    "Error on line {}: Name '{}' does not exist!",
-                    meta.line_count + 1,
-                    token.val
-                );
-                exit(1);
+                if !tolerate_names {
+                    eprintln!(
+                        "Error on line {}: Name '{}' does not exist!",
+                        meta.line_count + 1,
+                        token.val
+                    );
+                    exit(1);
+                }
+                token
             }
             _ => token,
         };
@@ -265,7 +288,7 @@ fn get_args(tokens: Vec<Token>, meta: &mut Metadata) -> Vec<Token> {
 ///     None => println!("It's fine..."),
 /// }
 /// ```
-fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
+pub fn run_scope(token: &Token, meta: &mut Metadata) -> Token {
     match token.ty {
         TokenTypes::SCOPE => {
             *meta.scope += 1;
@@ -365,7 +388,7 @@ pub fn get_variables() -> RwLockReadGuard<'static, HashMap<String, Variable>> {
 }
 
 fn say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     for arg in args {
         print!("{} ", arg.val);
@@ -381,7 +404,7 @@ fn say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn short_say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     for arg in args {
         print!("{} ", arg.val);
@@ -395,7 +418,7 @@ fn short_say(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 1 {
         return Err("(ask) Not enough arguments!".to_string());
@@ -432,7 +455,7 @@ fn ask(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
     let var_name = args[0].val.to_string();
     let var_value = args[1].val.to_string();
 
@@ -469,7 +492,7 @@ fn create_var(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
 }
 
 fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(+) Not enough arguments!".to_string());
@@ -511,7 +534,7 @@ fn sum(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 }
 fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(-) Not enough arguments!".to_string());
@@ -553,7 +576,7 @@ fn difference(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> 
     }
 }
 fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(*) Not enough arguments!".to_string());
@@ -595,7 +618,7 @@ fn product(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     }
 }
 fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(/) Not enough arguments!".to_string());
@@ -638,7 +661,7 @@ fn quotient(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 1 {
         return Err("(forever) Not enough arguments!".to_string());
@@ -668,7 +691,7 @@ fn forever(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 1 {
         return Err("(scope) Not enough arguments!".to_string());
@@ -695,7 +718,7 @@ fn scope(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(if) Not enough arguments!".to_string());
@@ -722,7 +745,7 @@ fn if_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(==) Not enough arguments!".to_string());
@@ -747,7 +770,7 @@ fn eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(!=) Not enough arguments!".to_string());
@@ -772,7 +795,7 @@ fn ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn lazy_eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(lazy=) Not enough arguments!".to_string());
@@ -797,7 +820,7 @@ fn lazy_eq(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn lazy_ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(lazy!=) Not enough arguments!".to_string());
@@ -822,7 +845,7 @@ fn lazy_ne(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(>) Not enough arguments!".to_string());
@@ -860,7 +883,7 @@ fn gt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     });
 }
 fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 2 {
         return Err("(<) Not enough arguments!".to_string());
@@ -900,7 +923,7 @@ fn lt(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 
 fn while_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     loop {
-        let args = get_args(tokens.clone(), meta);
+        let args = get_args(tokens.clone(), meta, false);
 
         if args.len() < 2 {
             return Err("(while) Not enough arguments!".to_string());
@@ -941,7 +964,7 @@ fn while_(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
 
 fn until(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     loop {
-        let args = get_args(tokens.clone(), meta);
+        let args = get_args(tokens.clone(), meta, false);
 
         if args.len() < 2 {
             return Err("(until) Not enough arguments!".to_string());
@@ -1276,7 +1299,7 @@ fn break_(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn int(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     let convertable = &args[0].val;
     match convertable.parse::<i64>() {
@@ -1291,7 +1314,7 @@ fn int(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     });
 }
 fn float(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     let convertable = &args[0].val;
     match convertable.parse::<f64>() {
@@ -1321,14 +1344,13 @@ fn vars(_tokens: Vec<Token>, _meta: &mut Metadata) -> Result<Token, String> {
 }
 
 fn format_array(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     if args.len() < 1 {
         return Err("(format_array) Not enough arguments!".to_string());
     }
 
     let array = read_array(&args[0], meta);
-    println!("{:?}", array);
 
     for token in array {
         println!("{}", token.val);
@@ -1342,7 +1364,7 @@ fn format_array(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String
 }
 
 fn quit(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
-    let args = get_args(tokens, meta);
+    let args = get_args(tokens, meta, false);
 
     let code: i32 = if args.len() > 0 {
         match args[0].val.parse() {
@@ -1356,4 +1378,30 @@ fn quit(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
     };
 
     exit(code);
+}
+
+fn func(tokens: Vec<Token>, meta: &mut Metadata) -> Result<Token, String> {
+    let args = get_args(tokens, meta, true);
+
+    let func_name = &args[0].val;
+    // let array = read_array(&args[1], meta);
+    let scopex = args[1].clone();
+
+    let custom_funcs = CUSTOM_FUNCS.write();
+
+    let mut custom_funcs = match custom_funcs {
+        Ok(cf) => cf,
+        Err(e) => {
+            eprintln!("{e}");
+            exit(1);
+        }
+    };
+
+    custom_funcs.insert(func_name.to_string(), scopex);
+
+    return Ok(Token {
+        ty: TokenTypes::NONE,
+        modifiers: vec![],
+        val: "None".to_string(),
+    });
 }

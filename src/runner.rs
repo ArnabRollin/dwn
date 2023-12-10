@@ -1,6 +1,6 @@
 //! The runner for Dawn (dwn)
 
-use crate::dwn::Metadata;
+use crate::dwn::{run_scope, Metadata, CUSTOM_FUNCS};
 use crate::lexer::{tokenize, Token, TokenTypes};
 use std::process::exit;
 use std::sync::RwLockReadGuard;
@@ -89,6 +89,61 @@ pub fn run_tokens(
                                 exit(1);
                             }
                         }
+                    }
+                    None => {
+                        if capture_errors {
+                            return Err(format!(
+                                "Error: Function {} does not exist!",
+                                tokens[0].val
+                            ));
+                        }
+                        eprintln!("Error: Function {} does not exist!", tokens[0].val);
+                        exit(1);
+                    }
+                }
+            }
+            TokenTypes::NAME => {
+                if capture_errors {
+                    return Err(format!("Error: Name {} not found!", tokens[0].val));
+                }
+                eprintln!("Error: Name {} not found!", tokens[0].val);
+                exit(1);
+            }
+            TokenTypes::CUSTOMFUNC => {
+                let fname = tokens[0].val.as_str();
+                let custom_funcs = match CUSTOM_FUNCS.read() {
+                    Ok(cf) => cf,
+                    Err(e) => {
+                        eprintln!("{e}");
+                        exit(1);
+                    }
+                }
+                .clone();
+
+                let f = custom_funcs.get(fname);
+
+                match f {
+                    Some(f) => {
+                        let mut args: Vec<Token> = vec![];
+                        let mut tokens = tokens.iter();
+
+                        tokens.next();
+
+                        for token in tokens {
+                            args.push(Token { ..token.clone() })
+                        }
+
+                        let ret = if !*meta.in_scope {
+                            run_scope(f, meta)
+                        } else {
+                            return Ok(Token {
+                                ty: TokenTypes::NONE,
+                                modifiers: vec![],
+                                val: "None".to_string(),
+                            });
+                        };
+
+                        return Ok(ret);
                     }
                     None => {
                         if capture_errors {
