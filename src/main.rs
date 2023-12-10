@@ -2,16 +2,12 @@
 #[macro_use]
 extern crate lazy_static;
 
-use about::{about, help};
-use argparser::argparse;
 use bytecode::{bytecode_compile_file, bytecode_run};
+use clap::{Parser, Subcommand};
 use framework::make_framework;
 use idle::idle;
 use interpreter::interpret_file;
-use std::{env::args, process::exit};
 
-mod about;
-mod argparser;
 mod bytecode;
 mod dwn;
 mod framework;
@@ -20,45 +16,38 @@ mod interpreter;
 mod lexer;
 mod runner;
 
+/// Dawn (`dwn`) is the interpreter and bytecode compiler for the Dawn Programming Language.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Runs a Dawn project file.
+    #[command(alias = "r")]
+    Run { file: String },
+    /// Bytecode compiles a Dawn project file.
+    Bytec { file: String, level: Option<i32> },
+    /// Runs a Dawn bytecode file.
+    Byterun { file: String },
+    /// Starts the Integrated Development and Learning Environment (IDLE)
+    Idle,
+    /// Creates a framework for Dawn Programming Language extensions.
+    #[command(alias = "fw")]
+    Framework,
+}
+
 fn main() {
-    let mut args = args();
+    let args = Args::parse();
 
-    // Skip program name
-    args.next();
-
-    let arguments = argparse(args);
-
-    if arguments.options.is_empty()
-        && arguments.flags.is_empty()
-        && arguments.arguments.is_empty()
-        && (arguments.command == String::new())
-    {
-        about();
-        exit(1)
-    }
-
-    if arguments.options.contains(&"help".to_string()) || arguments.flags.contains(&"h".to_string())
-    {
-        about();
-        exit(0);
-    }
-
-    if arguments.options.contains(&"version".to_string())
-        || arguments.flags.contains(&"v".to_string())
-    {
-        println!("0.12.0");
-        exit(0);
-    }
-
-    match arguments.command.as_str() {
-        "help" => help(arguments.arguments.get(0)),
-        "run" | "r" => interpret_file(arguments.arguments.get(0)),
-        "bytec" | "bytecodec" | "bytc" => {
-            bytecode_compile_file(arguments.arguments.get(0), arguments.variables.get("level"))
-        }
-        "byterun" | "bytecoderun" | "bytrun" => bytecode_run(arguments.arguments.get(0)),
-        "idle" => idle(),
-        "framework" | "fw" => make_framework(),
-        unknown_command => eprintln!("Unknown command: {}", unknown_command),
+    match args.command {
+        Commands::Run { file } => interpret_file(file),
+        Commands::Bytec { file, level } => bytecode_compile_file(file, level.unwrap_or(-1)),
+        Commands::Byterun { file } => bytecode_run(file),
+        Commands::Idle => idle(),
+        Commands::Framework => make_framework(),
     }
 }

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2023-12-10
+
+### Added
+
+- Function creation support (no arguments).
+- Unknown names now raise errors.
+
+### Changed
+
+- (**dev notes**): Migrated to `clap` API.
+
 ## [0.12.0] - 2023-10-30
 
 ### Added
@@ -155,7 +166,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simple function and string parsing
 
-[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.12.0...HEAD
+[unreleased]: https://github.com/ArnabRollin/dwn/compare/v0.13.0...HEAD
+
+[0.13.0]: https://github.com/ArnabRollin/dwn/compare/v0.12.0...v0.13.0
 
 [0.12.0]: https://github.com/ArnabRollin/dwn/compare/v0.11.0...v0.12.0
 

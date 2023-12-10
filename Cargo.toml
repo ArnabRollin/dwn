@@ -1,9 +1,10 @@
 [package]
 name = "dwn"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
 lazy_static = "1.4.0"
 
 [target.x86_64-unknown-linux-gnu]

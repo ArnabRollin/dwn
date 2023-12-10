@@ -2,23 +2,14 @@
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::process::exit;
 
 use crate::dwn::{get_funcs, Metadata};
 use crate::runner::run;
 
 /// The function used to interpret files.
-pub fn interpret_file(file: Option<&String>) {
-    let file_default = &String::new();
-    let file = file.unwrap_or(file_default);
-
-    if file == file_default {
-        eprintln!("Error: Please provide a file to run!");
-        exit(1);
-    }
-
+pub fn interpret_file(file: String) {
     let reader =
-        BufReader::new(File::open(file).expect(format!("Cannot open file `{}`", file).as_str()));
+        BufReader::new(File::open(&file).expect(format!("Cannot open file `{}`", file).as_str()));
 
     let mut scope = 0;
     let mut in_scope = false;

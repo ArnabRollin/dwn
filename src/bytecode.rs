@@ -29,34 +29,13 @@ lazy_static! {
 }
 
 /// The function used to bytecode compile files.
-pub fn bytecode_compile_file(file: Option<&String>, level: Option<&String>) {
-    if file.is_none() {
-        eprintln!("Error: Please provide a file to compile!");
-        exit(1);
-    }
-
-    let file = file.unwrap();
-
+pub fn bytecode_compile_file(file: String, level: i32) {
     let max_level = 1;
-    let level = if level.is_none() {
-        max_level
-    } else {
-        let level = level.unwrap();
-        if level.to_lowercase() == "latest".to_string() {
-            max_level
-        } else {
-            match level.parse::<i64>() {
-                Ok(level) => level,
-                Err(_) => {
-                    eprintln!("Error: Level must be a number or 'latest' !");
-                    exit(1);
-                }
-            }
-        }
-    };
+
+    let level = if level < 0 { max_level } else { level };
 
     let reader =
-        BufReader::new(File::open(file).expect(format!("Cannot open file `{}`", file).as_str()));
+        BufReader::new(File::open(&file).expect(format!("Cannot open file `{}`", file).as_str()));
 
     match level {
         1 => bytec_lvl1(reader, file),
@@ -67,7 +46,7 @@ pub fn bytecode_compile_file(file: Option<&String>, level: Option<&String>) {
     }
 }
 
-fn bytec_lvl1(reader: BufReader<File>, file: &String) {
+fn bytec_lvl1(reader: BufReader<File>, file: String) {
     let mut scope = 0;
     let mut in_scope = false;
     let mut scope_token = String::new();
@@ -179,16 +158,9 @@ fn bytec_lvl1(reader: BufReader<File>, file: &String) {
     }
 }
 
-pub fn bytecode_run(bytecode_file: Option<&String>) {
-    if bytecode_file.is_none() {
-        eprintln!("Error: Please provide a file to compile!");
-        exit(1);
-    }
-
-    let bytecode_file = bytecode_file.unwrap();
-
+pub fn bytecode_run(bytecode_file: String) {
     let mut reader = BufReader::new(
-        File::open(bytecode_file).expect(format!("Cannot open file `{}`", bytecode_file).as_str()),
+        File::open(&bytecode_file).expect(format!("Cannot open file `{}`", bytecode_file).as_str()),
     );
 
     let mut level = String::new();
