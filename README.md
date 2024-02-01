@@ -2,6 +2,8 @@
 
 Dawn (`dwn`) is the interpreter and bytecode compiler for the Dawn Programming Language.
 
+# NOTE!: This project has been abandoned. A new project [`orion`](https://github.com/Solarcode-org/orion-lang) has been created in the [Solarcode Organisation](https://github.com/https://github.com/Solarcode-org)
+
 ## Installation options
 
 - [Go to book](https://arnabrollin.github.io/dwn-book)
